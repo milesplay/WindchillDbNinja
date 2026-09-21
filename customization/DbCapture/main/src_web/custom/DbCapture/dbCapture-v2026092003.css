@@ -1,0 +1,250 @@
+.dbcCaptureGlobalBanner {
+   position: absolute;
+   z-index: 2;
+   box-sizing: border-box;
+   height: 36px;
+   max-width: 100%;
+   overflow: hidden;
+   padding: 0;
+   border: 1px solid #fff;
+   border-radius: 3px 9px 3px 9px;
+   outline: 1px solid #a91d2d;
+   box-shadow: 0 1px 4px rgba(86, 8, 21, 0.24), inset 0 0 0 2px #a91d2d;
+   background: linear-gradient(110deg, #93172c, #c7253d 52%, #971529);
+   color: #fff;
+   font-weight: 700;
+   text-align: center;
+   cursor: help;
+}
+
+.dbcCaptureGlobalBanner:focus-visible {
+   outline: 2px solid #fff;
+   outline-offset: -4px;
+}
+
+.dbcBannerArt {
+   position: absolute;
+   left: 50%;
+   top: 50%;
+   width: max-content;
+   transform-origin: center;
+}
+
+.dbcBannerCompact {
+   display: none;
+   position: absolute;
+   left: 50%;
+   top: 50%;
+   font: 18px/20px sans-serif;
+   transform-origin: center;
+}
+
+.dbcCaptureGlobalBannerCompact {
+   border-radius: 4px;
+   outline: none;
+   box-shadow: inset 0 0 0 2px #a91d2d;
+}
+
+.dbcCaptureGlobalBannerCompact .dbcBannerArt {
+   visibility: hidden;
+}
+
+.dbcCaptureGlobalBannerCompact .dbcBannerCompact {
+   display: block;
+}
+
+.dbcCaptureGlobalBannerNoSpace {
+   clip: rect(0, 0, 0, 0);
+   clip-path: inset(50%);
+   border: 0;
+   outline: 0;
+   box-shadow: none;
+}
+
+.dbcBannerOverline, .dbcBannerTagline {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 7px;
+   font: 700 8px/8px Georgia, serif;
+   letter-spacing: 2px;
+}
+
+.dbcBannerOverline:before, .dbcBannerOverline:after,
+.dbcBannerTagline:before, .dbcBannerTagline:after {
+   content: "";
+   width: 26%;
+   height: 1px;
+   background: rgba(255, 255, 255, 0.8);
+}
+
+.dbcBannerHeadline {
+   display: block;
+   font: 900 15px/16px Georgia, "Times New Roman", serif;
+   letter-spacing: 0.2px;
+   white-space: nowrap;
+}
+
+.dbcBannerTagline {
+   font-family: sans-serif;
+   letter-spacing: 1px;
+}
+
+.dbcCaptureGlobalBannerOther {
+   background: linear-gradient(110deg, #701124, #a71930 52%, #7c1526);
+}
+
+.dbcScopeEditor, .dbcTableFilter {
+   padding: 8px 10px;
+   color: #333;
+}
+
+.dbcScopeEditor p, .dbcTableFilter p {
+   margin: 0 0 10px;
+   line-height: 1.5;
+}
+
+.dbcScopeTools {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 8px;
+   margin: 10px 0;
+}
+
+.dbcScopeLists {
+   display: flex;
+   gap: 12px;
+   max-width: 1100px;
+   align-items: stretch;
+   margin-bottom: 10px;
+}
+
+.dbcScopeList {
+   flex: 1;
+   min-width: 0;
+}
+
+.dbcScopeList label {
+   display: block;
+   margin-bottom: 6px;
+   font-weight: 700;
+}
+
+.dbcScopeList select {
+   box-sizing: border-box;
+   width: 100%;
+   min-height: 240px;
+   border: 1px solid #a9b7c2;
+   background: #fff;
+   font: 12px/1.7 monospace;
+}
+
+.dbcScopeList select:disabled {
+   color: #44515c;
+   background: #f5f7f9;
+   opacity: 1;
+}
+
+.dbcScopeArrows {
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   gap: 12px;
+}
+
+.dbcScopeArrows button {
+   padding: 8px 10px;
+   color: #1f5791;
+}
+
+.dbcScopeArrows button:disabled {
+   color: #8a969f;
+}
+
+.dbcScopeLocked {
+   max-height: 160px;
+   overflow: auto;
+   margin: 8px 0;
+   padding-left: 20px;
+   font: 11px/1.8 monospace;
+}
+
+#dbcScopeStatus, #dbcFilterStatus {
+   margin-top: 10px;
+}
+
+.dbcHiddenReadback {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 8px;
+   max-height: 180px;
+   overflow: auto;
+   padding: 8px 0;
+}
+
+.dbcHiddenChip {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+   padding: 3px 5px 3px 10px;
+   border: 1px solid #d3dce3;
+   border-radius: 14px;
+   background: #f1f5f8;
+   font: 12px monospace;
+}
+
+.dbcHiddenRemove {
+   border: 0;
+   border-radius: 50%;
+   background: transparent;
+   color: #9d1d2b;
+   width: 23px;
+   height: 23px;
+   font-size: 19px;
+   cursor: pointer;
+}
+
+.dbcHiddenRemove:hover, .dbcHiddenRemove:focus-visible {
+   background: #fbe0e4;
+}
+
+.dbcCsvFeedback {
+   padding: 5px 0;
+   overflow-wrap: anywhere;
+}
+
+.dbcCsvFeedback:empty {
+   display: none;
+}
+
+textarea.dbcRecordedText {
+   box-sizing: border-box;
+   width: 100%;
+   min-width: 240px;
+   height: 8em !important;
+   max-height: 8em;
+   overflow: auto !important;
+   resize: none;
+   font-family: monospace;
+   white-space: pre;
+   background: #fafafa;
+   color: #222;
+}
+
+textarea.dbcWarningSummary {
+   height: 5.5em !important;
+   max-height: 5.5em;
+   font-size: 12px;
+   line-height: 1.2;
+}
+
+.dbcStatusLabel {
+   position: absolute;
+   width: 1px;
+   height: 1px;
+   margin: -1px;
+   overflow: hidden;
+   clip: rect(0, 0, 0, 0);
+   white-space: nowrap;
+}

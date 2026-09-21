@@ -1,0 +1,32 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.ptc.com/schema/mvc"
+       xsi:schemaLocation="
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+http://www.ptc.com/schema/mvc http://www.ptc.com/schema/mvc/mvc-10.0.xsd">
+
+   <!-- Registers the DB Capture table builders.
+
+        This is the on-premise route, and the only one that works here. The
+        wt.properties setting custom.mvc.builders.base-packages looks like the
+        customization hook - its own schema documents it as such - but
+        CustomBuilderScanBeanDefinitionParser.getCustomBasePackage() checks
+        WindchillPlusHelper.isWindchillPlus() first and logs "Not a Windchill
+        Plus environment, custom-builder-scan is not supported." before
+        returning null. So on a normal install the property is silently ignored
+        and the component id fails to resolve at request time with
+        "Unable to find configBuilder for the componentId".
+
+        MVCDispatcher-servlet.xml imports classpath:config/mvc/*-configs.xml,
+        which is how this file gets picked up, and CCD's src_web whitelist
+        allows config/mvc/<module>*.xml - so this needs no overlay script.
+
+        The spring "context" namespace must be declared with its schemaLocation
+        even though nothing here uses it: mvc-10.0.xsd refers to
+        context:filterType, and without the mapping the whole import of
+        config/mvc/*-configs.xml fails and MVCDispatcher does not start. -->
+   <mvc:builder-scan base-package="com.ptc.dbcapture.mvc.builders"/>
+
+</beans>

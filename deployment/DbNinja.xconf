@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configuration SYSTEM "xconf.dtd">
+<Configuration xmlns:xlink="http://www.w3.org/1999/xlink">
+   <ConfigurationRef xlink:href="../DbCapture/xconf/DbCapture.service.properties.xconf"/>
+   <Property name="wt.services.service.905000"
+             default="com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService"
+             targetFile="codebase/wt.properties"/>
+   <AddToProperty name="com.ptc.netmarkets.util.misc.customActions"
+                  value="config/actions/DbCapture-actions.xml"/>
+   <AddToProperty name="com.ptc.netmarkets.util.misc.customActionModels"
+                  value="config/actions/DbCapture-actionModels.xml"/>
+   <Property name="com.ptc.dbcapture.excludeTables" default="" targetFile="codebase/wt.properties"/>
+   <Property name="com.ptc.dbcapture.maxRowsPerTable" default="5000" targetFile="codebase/wt.properties"/>
+   <Property name="com.ptc.dbcapture.correlateLogs" default="false" targetFile="codebase/wt.properties"/>
+</Configuration>

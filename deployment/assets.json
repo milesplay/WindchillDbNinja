@@ -1,0 +1,20 @@
+{
+  "header": "dbCaptureHeader-v2026092007.js",
+  "csv": "dbCaptureCsv-v2026092003.js",
+  "diagnostics": "dbCaptureDiagnostics-v20260920.js",
+  "menuIcons": "dbNinjaActionIcons-v2026092101.js",
+  "css": "dbCapture-v2026092003.css",
+  "jsfrag": "dbNinja.jsfrag",
+  "actionIcons": {
+    "startDbCapture": {
+      "file": "dbNinjaTrick-v20260921.png",
+      "codePoint": "1F977",
+      "sha256": "bfac35e336aa3e49a67227b1d80fff8ff9dac97490932a49e15510044b385baf"
+    },
+    "stopDbCapture": {
+      "file": "dbNinjaStealth-v20260921.png",
+      "codePoint": "1F4A8",
+      "sha256": "a30f87e9901a1ac2654fcc026b3fcee3e1151e28bf989c28d7c17269d6304965"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE urlvalidators SYSTEM "urlValidators.dtd">
+<!--
+  Allow-lists the DB Capture pages against the DB_CAPTURE_ADMIN UI component,
+  mirroring how common-validators.xml registers /workflow/WfAdminDashBoard.
+  Defence in depth only - the service and the MVC builders enforce
+  authorization themselves.
+-->
+<urlvalidators>
+   <urlvalidator url="/dbcapture/objectDetails"
+                 class="com.ptc.core.components.validators.URLValidatorSiteOrgLibProdProjUtilities"
+                 uicomponent="DB_CAPTURE_ADMIN"/>
+   <urlvalidator url="/dbcapture/captureDiagnostics"
+                 class="com.ptc.core.components.validators.URLValidatorSiteOrgLibProdProjUtilities"
+                 uicomponent="DB_CAPTURE_ADMIN"/>
+   <urlvalidator url="/dbcapture/dbCaptureAdmin"
+                 class="com.ptc.core.components.validators.URLValidatorSiteOrgLibProdProjUtilities"
+                 uicomponent="DB_CAPTURE_ADMIN"/>
+   <urlvalidator url="/comp/dbcapture.sessionTable"
+                 class="com.ptc.core.components.validators.URLValidatorSiteOrgLibProdProjUtilities"
+                 uicomponent="DB_CAPTURE_ADMIN"/>
+   <urlvalidator url="/comp/dbcapture.changeTable"
+                 class="com.ptc.core.components.validators.URLValidatorSiteOrgLibProdProjUtilities"
+                 uicomponent="DB_CAPTURE_ADMIN"/>
+</urlvalidators>

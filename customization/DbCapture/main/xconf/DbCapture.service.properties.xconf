@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configuration SYSTEM "xconf.dtd">
+<Configuration xmlns:xlink="http://www.w3.org/1999/xlink" targetFile="codebase/service.properties">
+
+   <!-- Binds the includeFilter selector names used in DbCapture-actions.xml to
+        the filter classes, the same way PTC registers hideNonSiteAdmin in
+        codebase/com/ptc/core/components/components.service.properties. -->
+   <Service context="default" name="com.ptc.core.ui.validation.SimpleValidationFilter">
+      <Option requestor="null" serviceClass="com.ptc.dbcapture.DbCaptureStateFilter$NotRunning"
+              selector="dbCaptureNotRunningFilter"/>
+      <Option requestor="null" serviceClass="com.ptc.dbcapture.DbCaptureStateFilter$Running"
+              selector="dbCaptureRunningFilter"/>
+   </Service>
+
+   <Service context="default" name="com.ptc.core.components.descriptor.DataUtility">
+      <Option requestor="java.lang.Object" selector="dbCaptureReport"
+              serviceClass="com.ptc.dbcapture.mvc.DbCaptureReportDataUtility" cardinality="duplicate"/>
+      <Option requestor="java.lang.Object" selector="dbCaptureSessionDiagnostics"
+              serviceClass="com.ptc.dbcapture.mvc.DbCaptureSessionDiagnosticsDataUtility" cardinality="duplicate"/>
+   </Service>
+
+</Configuration>

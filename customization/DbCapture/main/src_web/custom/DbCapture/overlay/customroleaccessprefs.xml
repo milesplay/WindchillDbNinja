@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  UI component registration for DB Capture.
+
+  Two things the merge in wt.filebased.XMLFileHelper insists on:
+
+  1. The node structure must mirror codebase/roleaccessprefs.xml -
+     <uics> -> <category> -> <uic>. A flat file makes
+     NmRoleAccessHelper.readUIComponentPrefs throw NullPointerException, which
+     breaks role-access validation for every action menu in the product.
+
+  2. Adding to a category that PTC already ships needs incremental="true", and
+     the labelId must match the OOTB one exactly. Without it the merge fails
+     with "Incremental tag is required for modifying OOTB configurations".
+     Same idea as incremental="" on an OOTB action model.
+
+  <global> is the category the Utilities entries live in; the 6000 range is that
+  block, where roleaccessprefs.xml puts WORKFLOW_ADMIN_DASHBOARD at 6042.
+  defaultAll="false" means no profile grants it implicitly - a site
+  administrator has to enable it, which is the right default for a tool that
+  reads every table in the schema.
+-->
+<uics>
+    <global labelId="globalLabel" incremental="true">
+      <uic name="DB_CAPTURE_ADMIN" order="6100" defaultAll="false"/>
+    </global>
+</uics>

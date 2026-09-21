@@ -1,0 +1,88 @@
+ResourceInfo.class=wt.tools.resource.MetadataResourceInfo
+ResourceInfo.customizable=true
+ResourceInfo.deprecated=false
+ResourceInfo.UUID=4b9e0341-fffb-46dd-b0ea-28701377c841
+
+# Entry Contents
+
+DbCaptureSession.value=DB Capture Session
+
+DbCaptureSession.captureId.value=Capture ID
+
+DbCaptureSession.description.value=Description
+
+DbCaptureSession.status.value=Status
+
+DbCaptureSession.captureMode.value=Mode
+
+DbCaptureSession.startedBy.value=Started By
+
+DbCaptureSession.startTime.value=Start Time
+
+DbCaptureSession.endTime.value=End Time
+
+DbCaptureSession.startScn.value=Start SCN
+
+DbCaptureSession.endScn.value=End SCN
+
+DbCaptureSession.tablesChanged.value=Tables Changed
+
+DbCaptureSession.createdCount.value=Created
+
+DbCaptureSession.updatedCount.value=Updated
+
+DbCaptureSession.deletedCount.value=Deleted
+
+DbCaptureSession.logicalDeletedCount.value=Logically Deleted
+
+DbCaptureSession.warnings.value=Warnings
+
+DbCaptureSession.errorText.value=Error
+
+DbCaptureChange.value=DB Capture Change
+
+DbCaptureChange.tableName.value=Table Name
+
+DbCaptureChange.className.value=Class Name
+
+DbCaptureChange.operation.value=Operation
+
+DbCaptureChange.targetRowId.value=Row ID (IDA2A2)
+
+DbCaptureChange.objectIdentity.value=Object Identity
+
+DbCaptureChange.changedColumns.value=Changed Columns
+
+DbCaptureChange.changeTime.value=Change Time
+
+DbCaptureChange.changeScn.value=Change SCN
+
+DbCaptureChange.transactionId.value=Transaction ID
+
+DbCaptureChange.actionName.value=Action Name
+
+DbCaptureChange.requestUri.value=Request URI
+
+DbCaptureChange.changedBy.value=Changed By
+
+DbCaptureChange.stackTrace.value=Stack Trace
+
+DbCaptureChange.undoSql.value=Undo SQL
+
+DbCaptureChange.note.value=Note
+
+DbCaptureAttrDelta.value=DB Capture Column Delta
+
+DbCaptureAttrDelta.columnName.value=Column Name
+
+DbCaptureAttrDelta.attributeName.value=Attribute Name
+
+DbCaptureAttrDelta.oldValue.value=Old Value
+
+DbCaptureAttrDelta.newValue.value=New Value
+
+DbCaptureAttrDelta.truncated.value=Truncated
+
+DbCaptureSessionChangeLink.value=DB Capture Session Change Link
+
+DbCaptureChangeDeltaLink.value=DB Capture Change Delta Link

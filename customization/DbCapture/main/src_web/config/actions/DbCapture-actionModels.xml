@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE actionmodels SYSTEM "customActionmodels.dtd">
+<actionmodels>
+
+   <!-- incremental="" adds to the shipped model instead of replacing it, so
+        PTC's own header entries stay untouched across upgrades.
+
+        Both entries chain off each other behind one separator, so Start and
+        Stop sit together as a block. Without an insertAfter of its own, a
+        second action lands at the very end of the menu. -->
+   <model name="header actions" incremental="">
+      <action name="separator" type="separator"
+              insertAfterActionName="clipboard" insertAfterObjectType="netmarkets"/>
+      <action name="startDbCapture" type="dbcapture"
+              insertAfterActionName="separator" insertAfterObjectType="separator"/>
+      <action name="stopDbCapture" type="dbcapture"
+              insertAfterActionName="startDbCapture" insertAfterObjectType="dbcapture"/>
+   </model>
+
+   <!-- A sub tab under Site, alongside Utilities. -->
+   <model name="site navigation" incremental="">
+      <action name="dbCaptureAdmin" type="dbcapture"
+              insertAfterActionName="listUtilities" insertAfterObjectType="site"/>
+   </model>
+
+   <!-- One Delete, in the sessions toolbar. It was previously also declared as
+        a row action, which is why the table showed the button twice. -->
+   <model name="dbcapture session table toolbar"
+          resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+      <action name="editDbCaptureDescription" type="dbcapture" shortcut="true"/>
+      <action name="deleteDbCaptureSession" type="dbcapture" shortcut="true"/>
+   </model>
+
+   <model name="dbcapture change table toolbar"
+          resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+      <action name="exportDbCaptureChangesCsv" type="dbcapture" shortcut="true"/>
+   </model>
+</actionmodels>

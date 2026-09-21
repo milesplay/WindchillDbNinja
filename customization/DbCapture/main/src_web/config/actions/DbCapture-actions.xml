@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE listofactions SYSTEM "customActions.dtd">
+<listofactions>
+
+   <!-- No class attribute: customActions.dtd declares it NMTOKEN, so an empty
+        value is invalid and these actions have no backing object type. -->
+   <objecttype name="dbcapture"
+               resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+
+      <!-- Quick Links entries. Each is offered only in the state it
+           applies to; the filters are bound in DbCapture.service.properties.xconf. -->
+      <action name="startDbCapture" enabledwhensuspended="true"
+              uicomponent="DB_CAPTURE_ADMIN">
+         <command class="com.ptc.dbcapture.DbCaptureCommands" method="startDbCapture"
+                  onClick="window.DbCaptureHeader ? window.DbCaptureHeader.startFromAction() : (window.alert('DB Ninja controls are unavailable. Reload the page before using Ninja Trick.'), false)"/>
+         <includeFilter name="dbCaptureNotRunningFilter"/>
+      </action>
+
+      <action name="stopDbCapture" enabledwhensuspended="true"
+              uicomponent="DB_CAPTURE_ADMIN">
+         <command class="com.ptc.dbcapture.DbCaptureCommands" method="stopDbCapture"
+                  onClick="window.DbCaptureHeader ? window.DbCaptureHeader.stopFromAction() : (window.alert('DB Ninja controls are unavailable. Reload the page before using Ninja Stealth.'), false)"/>
+         <includeFilter name="dbCaptureRunningFilter"/>
+      </action>
+
+      <!-- The administration page. Reached by the default URL convention
+           /netmarkets/jsp/<objecttype>/<action>.jsp, as Workflow Process
+           Administration is. -->
+      <action name="dbCaptureAdmin" enabledwhensuspended="true"
+              uicomponent="DB_CAPTURE_ADMIN">
+         <command windowType="page"/>
+         <includeFilter name="hideNonSiteAdmin"/>
+      </action>
+
+      <action name="editDbCaptureDescription" ajax="row" multiselect="false"
+              selectRequired="true" uicomponent="DB_CAPTURE_ADMIN">
+         <command url="netmarkets/jsp/dbcapture/editDescription.jsp"
+                  windowType="popup"/>
+      </action>
+
+      <action name="deleteDbCaptureSession" ajax="row" multiselect="true"
+              selectRequired="true" uicomponent="DB_CAPTURE_ADMIN">
+         <command class="com.ptc.dbcapture.DbCaptureCommands"
+                  method="deleteDbCaptureSession"
+                  onClick="JCAConfirm(event,'com.ptc.dbcapture.dbCaptureActionResource.CONFIRM_DELETE')"/>
+      </action>
+
+      <action name="exportDbCaptureChangesCsv" selectRequired="false"
+              uicomponent="DB_CAPTURE_ADMIN">
+         <command windowType="page" url="javascript:void(0)"
+                  onClick="window.DbCaptureCsv ? window.DbCaptureCsv.exportFromAction(event, target, table) : (window.alert('CSV tools are unavailable. Reload the page before exporting.'), false)"/>
+         <includeFilter name="hideNonSiteAdmin"/>
+      </action>
+   </objecttype>
+</listofactions>

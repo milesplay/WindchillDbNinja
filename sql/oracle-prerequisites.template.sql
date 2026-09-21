@@ -1,0 +1,27 @@
+-- REVIEW TEMPLATE ONLY. There are deliberately no executable grants.
+-- A DBA must confirm the Windchill schema and Oracle container first.
+-- Substitute the reviewed schema identifier, never a password.
+--
+-- Candidate privileges used by the verified Oracle 19c installation:
+-- GRANT EXECUTE ON SYS.DBMS_FLASHBACK TO <WINDCHILL_SCHEMA>;
+-- GRANT SELECT ON SYS.V_$DATABASE TO <WINDCHILL_SCHEMA>;
+-- GRANT SELECT ON SYS.V_$PARAMETER TO <WINDCHILL_SCHEMA>;
+-- GRANT SELECT ON SYS.V_$UNDOSTAT TO <WINDCHILL_SCHEMA>;
+-- GRANT FLASHBACK ANY TABLE TO <WINDCHILL_SCHEMA>;
+-- GRANT ANALYZE ANY TO <WINDCHILL_SCHEMA>;
+--
+-- These are NOT a least-privilege prescription. The broad ANY privileges
+-- require independent DBA approval. For historical table reads, review
+-- owned-object access or FLASHBACK plus READ/SELECT on approved objects.
+-- FLASHBACK Version Query and the module's SNAPSHOT (AS OF SCN comparison)
+-- both require historical-query access and usable Oracle undo.
+-- Start/Stop calls DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO. Oracle 19c
+-- documents ANALYZE ANY as required for that call; per-table FLASHBACK grants
+-- do not replace it. It is not a read-only SELECT. Do not grant it automatically.
+-- Validate each operation as the actual schema in its PDB, in a development
+-- or test environment only. See COMPATIBILITY.md for official references.
+--
+-- Do not change UNDO_RETENTION, retention guarantee, ARCHIVELOG, supplemental
+-- logging or Oracle initialization parameters just to install this tool.
+-- GRANT and DDL commit implicitly. Do not mix them with a business transaction.
+PROMPT This is a review-only template. No privileges or database settings were changed.
