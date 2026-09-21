@@ -4,8 +4,16 @@ WHENEVER OSERROR EXIT FAILURE ROLLBACK
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
 SET ECHO ON
 SELECT SYS_CONTEXT('USERENV','SESSION_USER') AS session_user,
+       SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AS current_schema,
        SYS_CONTEXT('USERENV','DB_NAME') AS db_name,
        SYS_CONTEXT('USERENV','CON_NAME') AS container_name FROM dual;
+SELECT privilege FROM session_privs
+ WHERE privilege IN ('CREATE TABLE', 'ANALYZE ANY', 'FLASHBACK ANY TABLE', 'UNLIMITED TABLESPACE')
+ ORDER BY privilege;
+SELECT default_tablespace FROM user_users;
+SELECT tablespace_name, bytes, max_bytes FROM user_ts_quotas ORDER BY tablespace_name;
+SELECT tablespace_name, status, contents FROM user_tablespaces
+ WHERE tablespace_name = 'INDX';
 SELECT DBMS_FLASHBACK.GET_SYSTEM_CHANGE_NUMBER AS current_scn FROM dual;
 SELECT current_scn FROM v$database;
 SELECT name, value FROM v$parameter WHERE name IN ('undo_retention', 'undo_tablespace');

@@ -11,7 +11,8 @@ test('create-only DDL uses all target files and rejects destructive statements b
   try {
     for (const table of tables) {
       fs.writeFileSync(path.join(directory, `create_${table}_Table.sql`),
-        `REM generated fixture\nCREATE TABLE ${table} (description VARCHAR2(1200), idA2A2 NUMBER)\n/\n`);
+        `REM generated fixture\nCREATE TABLE ${table} (description VARCHAR2(1200), idA2A2 NUMBER, `
+        + `CONSTRAINT PK_${table} PRIMARY KEY (idA2A2))\n/\n`);
       fs.writeFileSync(path.join(directory, `create_${table}_Index.sql`),
         `CREATE INDEX ${table}$COMPOSITE0 ON ${table}(idA2A2)\n/\n`);
     }

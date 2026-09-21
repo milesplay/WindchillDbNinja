@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "windchill-13.0.2.11-oracle19c-sql3",
+  "target": {
+    "windchill": "13.0.2.11",
+    "oracleMajor": 19,
+    "maxBytesPerChar": 3,
+    "lengthSemantics": "BYTE",
+    "indexTablespace": "INDX",
+    "tableTablespace": "schema-default"
+  },
+  "provenance": {
+    "method": "ptc-generated-custom-model-sql3",
+    "transformations": ["CRLF to LF", "Explicit VARCHAR2 BYTE semantics"],
+    "note": "Custom CREATE scripts retained from the qualified target model generation. Model/resource sources match the unchanged generated-model baseline. No vendor schema, site credentials, DROP scripts or SQL-event legacy table are included."
+  },
+  "generatedModelBaselineSha256": "daee27f8a4c5b343e3fd78652645dd5387f7abba19f632cd7c235c10a9a21465",
+  "tables": [
+    "DBCAPTUREATTRDELTA",
+    "DBCAPTURECHANGE",
+    "DBCAPTURESESSION",
+    "DBCAPTURETABLECHANGE"
+  ],
+  "primaryKeys": [
+    "PK_DBCAPTUREATTRDELTA",
+    "PK_DBCAPTURECHANGE",
+    "PK_DBCAPTURESESSION",
+    "PK_DBCAPTURETABLECHANGE"
+  ],
+  "secondaryIndexes": [
+    "DBCAPTUREATTRDELTA$COMPOSITE0",
+    "DBCAPTUREATTRDELTA$COMPOSITE1",
+    "DBCAPTUREATTRDELTA$COMPOSITE2",
+    "DBCAPTUREATTRDELTA$COMPOSITE3",
+    "DBCAPTURECHANGE$COMPOSITE0",
+    "DBCAPTURECHANGE$COMPOSITE1",
+    "DBCAPTURECHANGE$COMPOSITE2",
+    "DBCAPTURECHANGE$COMPOSITE3",
+    "DBCAPTURESESSION$COMPOSITE0",
+    "DBCAPTURESESSION$COMPOSITE1",
+    "DBCAPTURESESSION$COMPOSITE2",
+    "DBCAPTURETABLECHANGE$COMPOSI0",
+    "DBCAPTURETABLECHANGE$COMPOSI1",
+    "DBCAPTURETABLECHANGE$COMPOSI2"
+  ],
+  "inputs": {
+    "sql/oracle/ddl/create_DbCaptureAttrDelta_Index.sql": {
+      "bytes": 580,
+      "sha256": "201267737df2b1aa065d2b9e23199023770bf590cc9ad80c51a6cd756f60ae13"
+    },
+    "sql/oracle/ddl/create_DbCaptureAttrDelta_Table.sql": {
+      "bytes": 1361,
+      "sha256": "c29094d8d2bd6ff72c82e5d3e8f0e6aeb86d78d94f47c4943c19ee376ca7125f"
+    },
+    "sql/oracle/ddl/create_DbCaptureChange_Index.sql": {
+      "bytes": 568,
+      "sha256": "25ce0fe90e327279c6af8b54578bd642e0a76dee3a4f75872803538e8752aed5"
+    },
+    "sql/oracle/ddl/create_DbCaptureChange_Table.sql": {
+      "bytes": 1253,
+      "sha256": "ee4355d36575fcd61f7016e3e2a9f072619d940a2caee51472c989984791a229"
+    },
+    "sql/oracle/ddl/create_DbCaptureSession_Index.sql": {
+      "bytes": 414,
+      "sha256": "00789b57e506a8f782b2e77ebe515ad2a209163edfb6c88574999ad3f2bb11e5"
+    },
+    "sql/oracle/ddl/create_DbCaptureSession_Table.sql": {
+      "bytes": 1191,
+      "sha256": "cc860a412d310704ddbc9135ebd27f7b776397f96ac69acd156fe933d0ea72ed"
+    },
+    "sql/oracle/ddl/create_DbCaptureTableChange_Index.sql": {
+      "bytes": 442,
+      "sha256": "98d38f2e96cc256ae3abff2fac742027ae15c942ec5cbd6a05e7e0d955f2e793"
+    },
+    "sql/oracle/ddl/create_DbCaptureTableChange_Table.sql": {
+      "bytes": 1306,
+      "sha256": "864b26f49c70cdc8df42e1dc17e309447e490e2bd17bb9323bb9c3bded03364d"
+    }
+  },
+  "combined": {
+    "bytes": 9779,
+    "sha256": "a2b8b3ba92678fb315d64f7e014a9dbe8d84a2bf77d25a2b8eb5dfa8bffd1934"
+  }
+}

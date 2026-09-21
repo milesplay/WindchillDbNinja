@@ -1,6 +1,6 @@
 {
   "name": "windchill-db-ninja",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Oracle diagnostics customization for non-production Windchill on qualified Linux targets",
   "license": "MIT",
@@ -13,6 +13,7 @@
     "check:publication": "node tools/check-publication.mjs",
     "check:release": "node tools/check-publication.mjs --require-prebuilt",
     "verify:prebuilt": "node tools/prebuilt.mjs verify",
+    "verify:schema": "node tools/schema-package.mjs verify",
     "build:prebuilt": "node tools/build-prebuilt.mjs"
   }
 }

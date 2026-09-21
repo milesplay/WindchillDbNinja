@@ -82,10 +82,21 @@ Windows is unsupported as shipped; the evidence store requires POSIX/unix
 attributes. There is no Windows certification.
 
 Default `plan` uses the target build; `plan --prebuilt` explicitly selects the
-verified package. Do not silently fall back to an old installed JAR. Fresh DDL
-is still generated on the target and reviewed by the DBA; no portable
-pre-generated SQL, PTC/Oracle libraries or generated PTC JavaScript bundles
-belong in the package.
+verified package. Do not silently fall back to an old installed JAR.
+[Fresh-install DDL](sql/oracle/README.md) is bundled for the exact Oracle 19c /
+unchanged Windchill 13.0.2.11 model / `wt.db.maxBytesPerChar=3` / BYTE / INDX
+profile; all other profiles require target generation and qualification.
+DBA review/execution is separate. No PTC/Oracle libraries or generated PTC
+JavaScript bundles belong in the package.
+
+`tools/schema-package.mjs verify` binds the eight CREATE inputs and deterministic
+combined output to the unchanged model baseline. Its optional `--target` checks
+the prebuilt target and declared/propagated width without an Oracle connection.
+The combined SQL guards reserved table/index/constraint names and explicit
+tablespaces before the first CREATE; it is neither an upgrade nor a reset.
+The publication gate rejects missing schema resources and any reviewed file
+omitted from the actual Git index. Package and prebuilt manifest versions must
+agree. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.1 packaging-only patch.
 
 ### Current-source prebuilt assembly
 

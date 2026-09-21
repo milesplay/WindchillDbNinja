@@ -43,11 +43,31 @@ Never serve the repository, `build/` or `backups/` over HTTP.
 Restrict plans, backups and runtime evidence to the installation owner and
 approved administrators.
 
+### Obtain a complete versioned checkout
+
+Clone the [repository](https://github.com/milesplay/WindchillDbNinja) and select
+the reviewed tag, or download the full source/install ZIP and SHA256SUMS from
+[Releases](https://github.com/milesplay/WindchillDbNinja/releases).
+For the 0.1.1 preview, keep the two assets in the same private directory:
+
+```text
+sha256sum -c SHA256SUMS
+unzip WindchillDbNinja-0.1.1-linux-x64.zip
+cd WindchillDbNinja-0.1.1
+node tools/schema-package.mjs verify
+```
+
+Stop on a failed/missing checksum. The ZIP includes source, tools, English
+documentation, qualified Oracle DDL and the prebuilt JAR/ClassInfo; no private
+build directory is required. Do not download just the JAR: source fingerprints,
+metadata and deployment resources are part of the package contract. The
+repository's package version must match the prebuilt manifest.
+
 **Release gate:** known collector and deployment/publication defects require
 fixed-source and selected-binary evidence before deployment. The agreed
 semantics are strict endpoint NET, not transient-event auditing. The
 [qualification summary](LOCAL-INSTALL.md) distinguishes prior icon deployment
-from pending full-release validation; it does not certify the new fixes as
+from offline full-release validation; it does not certify the new fixes as
 deployed. Do not bypass failures with a smaller passing group or an old JAR.
 
 ### Read-only preflight
@@ -66,6 +86,16 @@ It does not connect to Oracle or authorize an installation. Have a DBA run
 site's approved interactive authentication mechanism. Do not put passwords in a
 command line. Review [the privilege template](sql/oracle-prerequisites.template.sql)
 if operations are unavailable; do not automatically grant its broad privileges.
+
+**AI-assisted database setup is an explicit installation step.** Follow
+[DATABASE-SETUP.md](DATABASE-SETUP.md) to inventory the current grants/quotas,
+select only missing privileges, obtain DBA approval for specific GRANT/quota
+statements and execute them using an authorized grantor connection (or hand
+them to the DBA). Reconnect as the actual Windchill schema and verify the chosen
+SCN path, both FLASHBACK/SNAPSHOT historical reads and the separately approved
+monitoring flush. The public template is commented and makes no changes.
+Do not set an Oracle-confirmation flag merely because that template ran.
+Table creation follows section 5 with its own approval and result checks.
 
 Also inspect the installed XCONF syntax and mappings before modifying settings:
 
@@ -152,7 +182,7 @@ checksum/source drift or a target fingerprint mismatch. Do not substitute
 another JAR/ClassInfo or bypass the check. Other CPS/SDK combinations require
 a target rebuild and full qualification, not a manifest edit to suppress a mismatch.
 Prebuilt consumption does not remove the target's licensed tools, first-install
-DDL generation, DBA review or restart/acceptance requirements.
+schema qualification, DBA review or restart/acceptance requirements.
 
 ## 3. Generate and review a non-mutating deployment plan
 
@@ -260,12 +290,40 @@ The installer does not deploy the toolkit folder. Any reviewed archival step is
 separate from the plan's file rollback; preserve its bytes privately and restore
 them only if an approved rollback requires them.
 
-## 5. Fresh installation only: generate and initialize the schema
+## 5. Fresh installation only: initialize the schema
 
 Skip this section for a packaging migration or an existing populated installation.
+The 0.1.1 package contains the missing CREATE scripts; see
+[the schema inventory and safeguards](sql/oracle/README.md).
 
 With the validated target-build or matching prebuilt JAR/ClassInfo placed and
-affected services still stopped:
+affected services still stopped, select **one** of these routes.
+
+### A. Exact bundled profile
+
+The [combined first-install script](sql/oracle/create-db-ninja.sql) creates four
+tables, four primary keys and fourteen secondary indexes. It requires Oracle
+19c, the unchanged Windchill 13.0.2.11 generated-model baseline,
+`wt.db.maxBytesPerChar=3`, explicit `VARCHAR2(n BYTE)`, the schema's approved
+default data tablespace and the INDX index tablespace with sufficient quota.
+For the exact prebuilt target:
+
+```text
+node tools/schema-package.mjs verify
+node tools/schema-package.mjs verify --target
+```
+
+The first command checks the DDL/model fingerprints and deterministic combined
+output. The second additionally checks the prebuilt target and both declared
+and propagated width through installed xconfmanager and a properties reader.
+Neither connects to Oracle or executes SQL. The DBA must still confirm the
+actual Oracle release, PDB/schema, tablespace availability/capacity and rights.
+Do not edit the profile or change a site setting to force a match.
+
+### B. Different approved target profile
+
+For a different byte-width, tablespace policy, model or release, rebuild/qualify
+on the target as required and generate its own DDL:
 
 ```text
 node tools/dbninja.mjs ddl
@@ -280,16 +338,34 @@ files. Inspect the reported Oracle output directory and the actual
 node tools/create-schema.mjs "$WT_HOME/db/sql3/com/ptc/dbcapture" build/create-schema.sql
 ```
 
-The assembler consumes all four target-generated table and index scripts, refuses
-destructive statements and refuses to overwrite an existing output file. Its SQL
-checks that **none of the four tables exists before the first CREATE**. It does
-not create the obsolete SQL-event table.
+The assembler consumes all eight target-generated table/index scripts, refuses
+destructive/unrelated statements and refuses to overwrite an existing output
+file. Do not infer `sql3` or scale string widths manually; Oracle width caps make
+that unsafe. Keep regenerated site-specific DDL private.
+
+### DBA execution and acceptance for either route
 
 Have the DBA review tablespaces, widths, constraints and statements, then execute
-the reviewed script as the Windchill schema using the approved Oracle client.
-No portable pre-generated SQL is distributed, including in the prebuilt package.
+the reviewed **combined** script once as the Windchill schema in a fresh approved
+SQL*Plus-compatible script session. Do not run the individual inputs or use
+SYS/SYSTEM/an altered `CURRENT_SCHEMA`. The guard checks all reserved
+table/index names and primary-key constraint names before the first CREATE,
+and checks availability of explicitly named online permanent tablespaces.
+It does not prove quotas, capacity or correct default data tablespace.
+An explicitly authorized AI bot can execute that approved script through the
+secure schema-owner connection; otherwise the DBA executes it. Follow
+[the grant, CREATE and post-change runbook](DATABASE-SETUP.md) and report the
+outcomes separately.
+
+The bundled SQL is profile-specific, not portable pre-generated SQL for arbitrary
+sites. Existing or partially created DB Ninja objects make it stop; it does not
+silently skip them. No obsolete SQL-event table is created. Follow the
+[execution and result checks](sql/oracle/README.md#execution-is-a-separate-authorized-dba-step):
+four tables, four enabled/validated primary keys and **18 valid indexes in total**
+(four PK backing indexes plus fourteen secondary indexes).
 DDL commits implicitly. A mid-script failure requires DBA repair; a file rollback
-cannot undo it. Do not reset/drop existing capture data to retry.
+cannot undo it, and `WHENEVER ... ROLLBACK` does not undo successful CREATEs.
+Do not reset/drop existing capture data to retry.
 
 ## 6. Restart and prove runtime behavior
 

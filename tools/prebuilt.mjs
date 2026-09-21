@@ -47,6 +47,10 @@ export function readPrebuilt(root) {
   const manifestFile = confined(root, 'prebuilt/manifest.json');
   if (!fs.existsSync(manifestFile)) throw new Error('No prebuilt manifest. Use a reviewed target build instead.');
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  const packageInfo = JSON.parse(fs.readFileSync(confined(root, 'package.json'), 'utf8'));
+  if (packageInfo.name !== manifest.package || packageInfo.version !== manifest.version) {
+    throw new Error('Prebuilt package name/version differs from package.json; use a coherent release.');
+  }
   const baseline = JSON.parse(fs.readFileSync(confined(root, 'deployment/generated-model-baseline.json'), 'utf8'));
   const target = manifest.target;
   if (manifest.schemaVersion !== 1 || manifest.package !== 'windchill-db-ninja'

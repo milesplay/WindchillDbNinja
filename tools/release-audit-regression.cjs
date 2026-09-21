@@ -12,7 +12,7 @@ const gitAvailable = spawnSync('git', ['--version']).status === 0;
 const posixOnly = process.platform === 'win32' && 'POSIX fixture; real Windows qualification is separate.';
 const documents = ['README.md', 'INSTALL.md', 'HANDOFF.md', 'AGENTS.md',
   'COMPATIBILITY.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
-  'LOCAL-INSTALL.md', 'USE-CASES.md'];
+  'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md'];
 
 function fixture(t) {
   const parent = path.join(root, 'build');
@@ -49,6 +49,16 @@ function publicationFixture(t) {
   put(source, 'deployment/assets.json', fs.readFileSync(path.join(root, 'deployment/assets.json')));
   copyTool(source, 'dbninja.mjs');
   copyTool(source, 'check-publication.mjs');
+  copyTool(source, 'create-schema.mjs');
+  copyTool(source, 'schema-package.mjs');
+  for (const relative of ['sql/oracle', 'sql/oracle-check.sql', 'sql/oracle-prerequisites.template.sql',
+    'deployment/generated-model-baseline.json']) {
+    fs.cpSync(path.join(root, relative), path.join(source, relative), {recursive: true});
+  }
+  const baseline = JSON.parse(fs.readFileSync(path.join(root, 'deployment/generated-model-baseline.json'), 'utf8'));
+  for (const relative of Object.keys(baseline.generatedInputSources)) {
+    put(source, relative, fs.readFileSync(path.join(root, relative)));
+  }
   for (const icon of Object.values(assets.actionIcons)) {
     for (const relative of [
       `customization/DbCapture/main/src_web/custom/DbCapture/icons/${icon.file}`,
@@ -151,6 +161,27 @@ test('publication scans staged content, not only sanitized working-tree content'
   assert.notEqual(result.status, 0, 'The staged synthetic token was not scanned.');
 });
 
+test('publication refuses a complete working tree with DDL omitted from the actual Git index', {
+  skip: !gitAvailable && 'Git is not installed; no actual index-completeness check was executed.'
+}, t => {
+  const {source} = publicationFixture(t);
+  git(source, ['init', '--quiet']);
+  git(source, ['add', '.']);
+  assert.equal(publication(source).status, 0);
+  git(source, ['rm', '--cached', '--', 'sql/oracle/create-db-ninja.sql']);
+  const result = publication(source);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Git index omits publication files: sql\/oracle\/create-db-ninja.sql/);
+});
+
+test('publication requires the schema bundle even for a source-only checkout', t => {
+  const {source} = publicationFixture(t);
+  fs.unlinkSync(path.join(source, 'sql/oracle/ddl/create_DbCaptureSession_Table.sql'));
+  const result = publication(source);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /ENOENT|Missing regular schema resource/);
+});
+
 test('deployment confinement rejects a dangling symlink before any write', {skip: posixOnly}, async t => {
   const directory = fixture(t);
   const home = path.join(directory, 'mock-home');
@@ -168,7 +199,8 @@ for (const additional of [
     const directory = fixture(t);
     const {createOnlySql, tables} = await import('./create-schema.mjs');
     for (const table of tables) {
-      put(directory, `create_${table}_Table.sql`, `CREATE TABLE ${table} (idA2A2 NUMBER)\n/\n`);
+      put(directory, `create_${table}_Table.sql`, `CREATE TABLE ${table} (idA2A2 NUMBER, `
+        + `CONSTRAINT PK_${table} PRIMARY KEY (idA2A2))\n/\n`);
       put(directory, `create_${table}_Index.sql`,
         `CREATE INDEX ${table}$COMPOSITE0 ON ${table}(idA2A2)\n/\n`);
     }

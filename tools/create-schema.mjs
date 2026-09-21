@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {confined} from './filesystem.mjs';
 
 export const tables = ['DbCaptureAttrDelta', 'DbCaptureChange', 'DbCaptureSession', 'DbCaptureTableChange'];
 
@@ -98,17 +99,20 @@ function validateStorage(suffix, tableStatement) {
   const storagePair = '(?:(?:INITIAL|NEXT)\\s+\\d+[KMG]?'
     + '|(?:MINEXTENTS|PCTINCREASE|FREELISTS|FREELIST\\s+GROUPS)\\s+\\d+'
     + '|MAXEXTENTS\\s+(?:\\d+|UNLIMITED)|BUFFER_POOL\\s+(?:DEFAULT|KEEP|RECYCLE))';
-  const option = new RegExp(`^(?:TABLESPACE\\s+${identifier}\\b`
+  const option = new RegExp(`^(?:TABLESPACE\\s+(${identifier})(?=\\s|$)`
     + `|STORAGE\\s*\\(\\s*${storagePair}(?:\\s+${storagePair})*\\s*\\)`
     + '|(?:PCTFREE|PCTUSED|INITRANS|MAXTRANS)\\s+\\d+\\b'
     + '|(?:LOGGING|NOLOGGING|NOPARALLEL)\\b'
     + (tableStatement ? '|ENABLE\\s+PRIMARY\\s+KEY\\s+USING\\s+INDEX\\b' : '')
     + ')', 'i');
+  const tablespaces = new Set();
   while (suffix) {
     const match = suffix.match(option);
     if (!match) throw new Error('Unexpected/destructive or unsupported storage clause.');
+    if (match[1]) tablespaces.add(match[1].toUpperCase());
     suffix = suffix.slice(match[0].length).trim();
   }
+  return tablespaces;
 }
 
 function validateTable(sql, table) {
@@ -130,8 +134,8 @@ function validateTable(sql, table) {
     }
   }
   if (!names.has('IDA2A2')) throw new Error('Unexpected/destructive SQL: missing persistent identity.');
-  validateStorage(suffix, true);
-  return names;
+  if (primaryKeys !== 1) throw new Error('Unexpected/destructive SQL: missing primary key.');
+  return {columns: names, primaryKey: `PK_${table.toUpperCase()}`, tablespaces: validateStorage(suffix, true)};
 }
 
 function validateIndex(sql, table, columns, indexes) {
@@ -148,55 +152,91 @@ function validateIndex(sql, table, columns, indexes) {
       throw new Error('Unexpected/destructive or unsupported index expression.');
     }
   }
-  validateStorage(suffix, false);
+  return validateStorage(suffix, false);
 }
 
-export function createOnlySql(directory) {
+export function readCreateOnly(directory) {
   const fragments = [];
-  const columns = new Map(), indexes = new Set();
+  const columns = new Map(), indexes = new Set(), tablespaces = new Set(), primaryKeys = [];
+  let comments = 0;
   for (const kind of ['Table', 'Index']) {
     for (const table of tables) {
-      const file = path.join(directory, `create_${table}_${kind}.sql`);
+      const file = confined(directory, `create_${table}_${kind}.sql`);
+      if (!fs.lstatSync(file).isFile()) throw new Error(`Expected a regular DDL file: ${file}`);
       const original = fs.readFileSync(file, 'utf8');
       const parts = statements(original, file);
-      let creates = 0;
+      let creates = 0, tableComments = 0;
       for (const sql of parts) {
         if (kind === 'Table') {
           if (new RegExp(`^COMMENT\\s+ON\\s+TABLE\\s+${table}\\s+IS\\s+${literal}$`, 'i').test(sql)) {
-            if (creates !== 1) throw new Error(`Unexpected/destructive comment before table creation in ${file}`);
+            if (creates !== 1 || ++tableComments !== 1) {
+              throw new Error(`Unexpected/destructive comment before table creation or duplicate comment in ${file}`);
+            }
+            comments++;
           } else {
             if (++creates !== 1) throw new Error(`Unexpected/destructive additional table statement in ${file}`);
-            columns.set(table, validateTable(sql, table));
+            const definition = validateTable(sql, table);
+            columns.set(table, definition.columns);
+            primaryKeys.push(definition.primaryKey);
+            for (const name of definition.tablespaces) tablespaces.add(name);
           }
         } else {
-          validateIndex(sql, table, columns.get(table), indexes);
+          for (const name of validateIndex(sql, table, columns.get(table), indexes)) tablespaces.add(name);
           creates++;
         }
       }
-      if (creates === 0) throw new Error(`Expected target-generated ${kind} DDL in ${file}`);
+      if (creates === 0) throw new Error(`Expected module ${kind} DDL in ${file}`);
       // SQL*Plus slash terminators are normalized to avoid executing a CREATE twice.
       fragments.push(`-- Source: ${path.basename(file)}\n${parts.map(sql => `${sql};`).join('\n')}\n`);
     }
   }
-  const names = tables.map(table => `'${table.toUpperCase()}'`).join(', ');
-  return `-- First installation only. Generated on the TARGET Windchill.
+  return {fragments, tables: tables.map(table => table.toUpperCase()), primaryKeys: primaryKeys.sort(),
+    indexes: [...indexes].sort(), tablespaces: [...tablespaces].sort(), comments};
+}
+
+export function createOnlySql(directory) {
+  const definition = readCreateOnly(directory);
+  const quoted = names => names.map(name => `'${name}'`).join(', ');
+  const names = quoted(definition.tables);
+  const objects = quoted([...definition.tables, ...definition.primaryKeys, ...definition.indexes].sort());
+  const constraints = quoted(definition.primaryKeys);
+  const tablespaceCheck = definition.tablespaces.length ? `
+   SELECT COUNT(*) INTO tablespace_count FROM user_tablespaces
+      WHERE tablespace_name IN (${quoted(definition.tablespaces)}) AND status = 'ONLINE' AND contents = 'PERMANENT';
+   IF tablespace_count <> ${definition.tablespaces.length} THEN
+      RAISE_APPLICATION_ERROR(-20003, 'Required index/data tablespace is unavailable. Ask the DBA to review the DDL profile.');
+   END IF;` : '';
+  return `-- First installation only. Assembled from reviewed module CREATE scripts.
+-- Use only the matching Windchill/Oracle/byte-width profile. Development and test only.
 -- Review tablespaces, byte widths and all statements with the DBA.
 -- Run as the Windchill schema. Oracle DDL commits; partial failure is not rollback-safe.
-WHENEVER OSERROR EXIT FAILURE
-WHENEVER SQLERROR EXIT SQL.SQLCODE
+-- Use a fresh schema-owner session with no pending work; never run as SYS or SYSTEM.
+WHENEVER OSERROR EXIT FAILURE ROLLBACK
+WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
 SET DEFINE OFF
 SET ECHO ON
 DECLARE
    existing_count NUMBER;
+   constraint_count NUMBER;
+   tablespace_count NUMBER;
 BEGIN
-   SELECT COUNT(*) INTO existing_count FROM user_tables WHERE table_name IN (${names});
-   IF existing_count <> 0 THEN
-      RAISE_APPLICATION_ERROR(-20001, 'DB Ninja tables already exist. Do not reinstall/reset; review a migration instead.');
+   IF SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') <> SYS_CONTEXT('USERENV', 'SESSION_USER')
+      OR SYS_CONTEXT('USERENV', 'SESSION_USER') IN ('SYS', 'SYSTEM') THEN
+      RAISE_APPLICATION_ERROR(-20002, 'Use a fresh connection as the actual Windchill schema owner without CURRENT_SCHEMA changes.');
    END IF;
+   SELECT COUNT(*) INTO existing_count FROM user_objects WHERE object_name IN (${objects});
+   SELECT COUNT(*) INTO constraint_count FROM user_constraints WHERE constraint_name IN (${constraints});
+   IF existing_count <> 0 OR constraint_count <> 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'DB Ninja object or constraint names already exist. Do not reinstall/reset; review a migration instead.');
+   END IF;${tablespaceCheck}
 END;
 /
-${fragments.join('\n')}
+${definition.fragments.join('\n')}
 SELECT table_name FROM user_tables WHERE table_name IN (${names}) ORDER BY table_name;
+SELECT constraint_name, table_name, status, validated FROM user_constraints
+   WHERE constraint_name IN (${constraints}) ORDER BY constraint_name;
+SELECT index_name, table_name, status FROM user_indexes
+   WHERE table_name IN (${names}) ORDER BY table_name, index_name;
 `;
 }
 
@@ -207,7 +247,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const sql = createOnlySql(fs.realpathSync(process.argv[2]));
     fs.mkdirSync(path.dirname(output), {recursive: true, mode: 0o700});
     fs.writeFileSync(output, sql, {flag: 'wx', mode: 0o600});
-    console.log(`Created ${output}. No SQL was executed. Do not publish target-generated DDL.`);
+    console.log(`Created ${output}. No SQL was executed. Keep site-specific regenerated DDL private; review the target profile with the DBA.`);
   } catch (error) {
     console.error(`ERROR: ${error.message}`);
     process.exitCode = 1;

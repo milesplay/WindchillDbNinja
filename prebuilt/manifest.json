@@ -1,7 +1,11 @@
 {
   "schemaVersion": 1,
   "package": "windchill-db-ninja",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "distribution": {
+    "runtimeUnchangedFrom": "0.1.0",
+    "note": "Packaging-only patch adding qualified Oracle DDL, release checks and documentation. Runtime JAR, ClassInfo, generated-model baseline and the original build timestamp are unchanged."
+  },
   "target": {
     "os": "linux",
     "arch": "x64",

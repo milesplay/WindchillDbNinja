@@ -88,6 +88,7 @@ async function fixture(t) {
     build: {method: 'target-sdk-javac-with-matching-generated-models', javaRelease: 17,
       annotationProcessing: false, generatedModelBaselineSha256: sha(baselineBytes)},
     artifacts: Object.fromEntries([...payloads].map(([name, bytes]) => [name, {bytes: bytes.length, sha256: sha(bytes)}]))};
+  put(directory, 'package.json', JSON.stringify({name: manifest.package, version: manifest.version}));
   for (const [name, bytes] of payloads) put(directory, name, bytes);
   const save = () => put(directory, 'prebuilt/manifest.json', JSON.stringify(manifest));
   save();
@@ -110,6 +111,18 @@ test('prebuilt refuses stale source, missing metadata and artifact tampering', a
     else if (kind === 'missing') fs.unlinkSync(path.join(f.directory, 'prebuilt/metadata/com/ptc/dbcapture', metadataNames[0]));
     else fs.appendFileSync(path.join(f.directory, 'prebuilt/DbCapture.jar'), 'unreviewed');
     assert.throws(() => readPrebuilt(f.directory), /source differs|artifact mismatch/);
+  }
+});
+
+test('prebuilt package name and version must match the release manifest', async t => {
+  const {readPrebuilt} = await api;
+  for (const replacement of [
+    {name: 'unrelated-package', version: '0.1.0'},
+    {name: 'windchill-db-ninja', version: '0.1.1'}
+  ]) {
+    const f = await fixture(t);
+    put(f.directory, 'package.json', JSON.stringify(replacement));
+    assert.throws(() => readPrebuilt(f.directory), /name\/version differs/);
   }
 });
 

@@ -1,6 +1,6 @@
 # DB Ninja for Windchill
 
-[Repository](https://github.com/milesplay/WindchillDbNinja) | [Use cases](USE-CASES.md) | [Compatibility](COMPATIBILITY.md) | [Installation](INSTALL.md)
+[Repository](https://github.com/milesplay/WindchillDbNinja) | [Releases](https://github.com/milesplay/WindchillDbNinja/releases) | [Use cases](USE-CASES.md) | [Compatibility](COMPATIBILITY.md) | [Installation](INSTALL.md) | [Oracle DDL](sql/oracle/README.md)
 
 **See the database changes behind a Windchill operation.**
 
@@ -18,6 +18,24 @@ Deployment uses the installed PTC customization tools and additive extension poi
 The MIT distribution covers custom source and the explicitly reviewed custom
 JAR/ClassInfo package. No PTC/Oracle libraries, original PTC JSPs, generated PTC
 JavaScript bundles, database dumps or private case records are included.
+
+## Download and schema
+
+The **0.1.1 Linux development/test preview** provides a complete source/install
+ZIP and SHA256SUMS on the [release page](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1).
+Verify the ZIP checksum, extract it to a private directory outside the web root,
+and follow [INSTALL.md](INSTALL.md). A clone of the same tag contains the same
+tracked files; no Maven/npm/container package is needed.
+
+The DB Capture table DDL is now included:
+[guarded first-install SQL](sql/oracle/create-db-ninja.sql),
+[individual table/index scripts and conditions](sql/oracle/README.md), and
+[schema checksums/profile](sql/oracle/schema-profile.json).
+It creates **4 tables, 4 primary keys and 14 secondary indexes** for the qualified
+Oracle 19c / Windchill 13.0.2.11 / `wt.db.maxBytesPerChar=3` / INDX profile.
+It is not universal Oracle SQL and must not be run on an existing installation.
+See [the changelog](CHANGELOG.md) for the packaging correction; runtime binary
+bytes are unchanged from 0.1.0.
 
 ## Why DB Ninja?
 
@@ -47,7 +65,9 @@ See [worked investigation recipes and additional uses](USE-CASES.md).
 ## For an AI bot given only this repository URL
 
 Read [AGENTS.md](AGENTS.md), then [COMPATIBILITY.md](COMPATIBILITY.md) and
-[INSTALL.md](INSTALL.md). Inspect the target; do not infer its OS, Java version,
+[INSTALL.md](INSTALL.md), including [database setup](DATABASE-SETUP.md) for
+approved privilege grants, DDL creation and post-change checks.
+Inspect the target; do not infer its OS, Java version,
 database, credentials or maintenance permission from this repository.
 The first binary is **Linux x64 only**, with a POSIX/unix evidence filesystem.
 Node.js 22 or newer and the target's licensed PTC SDK/supported JDK are required
@@ -154,8 +174,9 @@ Preflight is read-only; package/target verification does not prove Oracle
 privileges, usable undo, runtime acceptance or authorization. Follow
 [INSTALL.md](INSTALL.md) to choose the target-build or prebuilt route, validate,
 review the plan and obtain maintenance/Oracle approval before apply.
-Fresh schema SQL is generated on the target and reviewed by the DBA; no portable
-pre-generated SQL is shipped. There are no automatic restarts or grants.
+Fresh schema SQL is [included for the qualified profile](sql/oracle/README.md);
+different profiles require target generation. The DBA reviews and executes it
+separately. There are no automatic restarts or grants.
 
 ## CPS/update preservation
 
@@ -176,13 +197,16 @@ after updates. See [CUSTOMIZATION.md](CUSTOMIZATION.md).
 | Document | Purpose |
 |---|---|
 | [INSTALL.md](INSTALL.md) | Linux target-build/prebuilt routes, first install versus update, rollback |
+| [DATABASE-SETUP.md](DATABASE-SETUP.md) | AI/DBA workflow for schema grants, quotas, CREATE DDL and verification |
+| [Oracle schema](sql/oracle/README.md) | Bundled table/index DDL, exact profile, integrity and DBA execution checks |
+| [CHANGELOG.md](CHANGELOG.md) | Versioned changes and release/download scope |
 | [COMPATIBILITY.md](COMPATIBILITY.md) | Windchill, JDK, OS, Oracle and topology requirements |
 | [CUSTOMIZATION.md](CUSTOMIZATION.md) | PTC guidance, deployment mapping and CPS maintenance |
 | [OPERATIONS.md](OPERATIONS.md) | Capture semantics, safe usage and workload/evidence limitations |
 | [USE-CASES.md](USE-CASES.md) | QML, customization, troubleshooting and further developer workflows |
 | [HANDOFF.md](HANDOFF.md) | Architecture, regression commands and compatibility traps |
-| [LOCAL-INSTALL.md](LOCAL-INSTALL.md) | Prior verified icon deployment versus pending release evidence |
-| [PUBLICATION.md](PUBLICATION.md) | Approved custom binary/source packaging and remaining release gates |
+| [LOCAL-INSTALL.md](LOCAL-INSTALL.md) | Offline/package qualification versus prior live icon deployment |
+| [PUBLICATION.md](PUBLICATION.md) | Approved custom binary/source/schema packaging and release gates |
 | [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) | Icon provenance and separately licensed vendor prerequisites |
 
 Do not commit the working directory wholesale. Run

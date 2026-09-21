@@ -3,6 +3,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {actionIcons, assets, bundle, configuration} from './dbninja.mjs';
 import {readPrebuilt, verifyPrebuiltTarget} from './prebuilt.mjs';
+import {readSchemaPackage} from './schema-package.mjs';
 
 const groups = ['scope', 'presentation', 'profiler', 'compatibility', 'smoke', 'web', 'icons', 'contracts'];
 const requested = process.argv[2] || 'all';
@@ -28,6 +29,7 @@ function main() {
     throw new Error(`Usage: node tools/validate.mjs all|unit|${groups.join('|')} [--prebuilt]`);
   }
   if (requested === 'all' || requested === 'unit') {
+    readSchemaPackage(bundle);
     run(process.execPath, ['tools/dbninja.mjs', 'test']);
     if (requested === 'unit') {
       if (prebuilt) readPrebuilt(bundle);

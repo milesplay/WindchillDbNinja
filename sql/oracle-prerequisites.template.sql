@@ -1,18 +1,35 @@
 -- REVIEW TEMPLATE ONLY. There are deliberately no executable grants.
 -- A DBA must confirm the Windchill schema and Oracle container first.
 -- Substitute the reviewed schema identifier, never a password.
+-- Follow DATABASE-SETUP.md: inventory, explicit approval, a separate private
+-- script, execution as an authorized grantor, then reconnect as Windchill.
 --
--- Candidate privileges used by the verified Oracle 19c installation:
+-- First-install table creation, only if not already available:
+-- GRANT CREATE TABLE TO <WINDCHILL_SCHEMA>;
+-- The DBA must review data and INDX quotas/space before any CREATE.
+-- Optional quota examples: use specific approved sizes, never a blind unlimited
+-- grant, and never reduce an existing quota while copying this template.
+-- ALTER USER <WINDCHILL_SCHEMA> QUOTA <APPROVED_DATA_SIZE> ON <DATA_TABLESPACE>;
+-- ALTER USER <WINDCHILL_SCHEMA> QUOTA <APPROVED_INDEX_SIZE> ON INDX;
+-- Indexes on the owner's own tables do not require CREATE ANY INDEX.
+--
+-- Candidate Oracle 19c statements; select only approved missing access:
 -- GRANT EXECUTE ON SYS.DBMS_FLASHBACK TO <WINDCHILL_SCHEMA>;
+-- GRANT EXECUTE ON SYS.DBMS_STATS TO <WINDCHILL_SCHEMA>;
 -- GRANT SELECT ON SYS.V_$DATABASE TO <WINDCHILL_SCHEMA>;
 -- GRANT SELECT ON SYS.V_$PARAMETER TO <WINDCHILL_SCHEMA>;
 -- GRANT SELECT ON SYS.V_$UNDOSTAT TO <WINDCHILL_SCHEMA>;
--- GRANT FLASHBACK ANY TABLE TO <WINDCHILL_SCHEMA>;
 -- GRANT ANALYZE ANY TO <WINDCHILL_SCHEMA>;
 --
--- These are NOT a least-privilege prescription. The broad ANY privileges
--- require independent DBA approval. For historical table reads, review
--- owned-object access or FLASHBACK plus READ/SELECT on approved objects.
+-- These are NOT a least-privilege prescription. Existing PUBLIC/role/owner
+-- access may already suffice. Diagnostic view SELECTs are separate from the
+-- chosen runtime SCN path. The broad ANALYZE ANY privilege requires independent
+-- DBA approval.
+-- Do not grant FLASHBACK ANY TABLE by default. Current table collection is
+-- owner-schema scoped; qualify its owned-object access first. For an explicitly
+-- approved cross-owner requirement, review FLASHBACK plus READ/SELECT on the
+-- specific objects, not a blanket ANY grant. A historical baseline's broader
+-- privileges are not mandatory installation instructions.
 -- FLASHBACK Version Query and the module's SNAPSHOT (AS OF SCN comparison)
 -- both require historical-query access and usable Oracle undo.
 -- Start/Stop calls DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO. Oracle 19c
@@ -20,6 +37,8 @@
 -- do not replace it. It is not a read-only SELECT. Do not grant it automatically.
 -- Validate each operation as the actual schema in its PDB, in a development
 -- or test environment only. See COMPATIBILITY.md for official references.
+-- Record an unapproved/unexecuted operation as unverified. Do not test solely
+-- as SYS/the grantor or treat a skipped probe as application-schema acceptance.
 --
 -- Do not change UNDO_RETENTION, retention guarantee, ARCHIVELOG, supplemental
 -- logging or Oracle initialization parameters just to install this tool.

@@ -5,7 +5,8 @@ The URL supplies the package and instructions, not server credentials, DBA
 approval or maintenance authorization. Given access to an authorized target:
 
 1. Read [README.md](README.md), [COMPATIBILITY.md](COMPATIBILITY.md),
-   [INSTALL.md](INSTALL.md), [CUSTOMIZATION.md](CUSTOMIZATION.md) and
+   [INSTALL.md](INSTALL.md), [DATABASE-SETUP.md](DATABASE-SETUP.md),
+   [CUSTOMIZATION.md](CUSTOMIZATION.md) and
    [OPERATIONS.md](OPERATIONS.md). Use [USE-CASES.md](USE-CASES.md) to understand
    the intended QML/customization/troubleshooting workflows. Treat [LOCAL-INSTALL.md](LOCAL-INSTALL.md)
    as evidence about one environment, not a target configuration.
@@ -20,7 +21,13 @@ approval or maintenance authorization. Given access to an authorized target:
    restrictions, `codebase.war`, service-slot conflicts, unreviewed DB privileges,
    active captures or unavailable maintenance approval. Never work around permissions.
 4. Run the read-only filesystem preflight and the separately approved database
-   checks. Keep credentials in the site's existing credential mechanism.
+   checks. Follow [the database runbook](DATABASE-SETUP.md): inventory existing
+   Windchill-schema privileges/quotas, prepare only missing approved GRANTs in a
+   private script, and obtain explicit DBA approval for each change. Execute with
+   an authorized grantor connection only if specifically permitted; otherwise
+   hand it to the DBA. Reconnect as Windchill to verify both historical-query
+   paths and the separately approved monitoring flush.
+   Keep credentials in the site's existing credential mechanism.
    Do not send licensed vendor source, private configuration, logs, SQL evidence
    or credentials to third-party services.
 5. Before a target CCD build, installation write or restart, obtain the necessary
@@ -35,7 +42,14 @@ approval or maintenance authorization. Given access to an authorized target:
    A stale plan must be regenerated, never forced past a drift check.
    Stop on unresolved collector/deployment/publication failures; do not omit
    tests, treat TODO assertions or skips as passes, or force an apply/rollback.
-7. Fresh installation: generate/review create-only DDL and obtain DBA approval.
+7. Fresh installation: discover [the bundled CREATE DDL](sql/oracle/README.md),
+   verify its model/byte-width/tablespace profile, and obtain DBA approval.
+   Use the bundle only for the exact qualified profile; otherwise generate and
+   review create-only DDL with the target's PTC tools. After specific DDL approval,
+   execute the combined script as the actual Windchill owner through the approved
+   script client, or hand it to the DBA. Verify four tables, four primary keys
+   and eighteen total indexes before restart; report grant and DDL outcomes
+   separately. The public privilege template itself makes no changes.
    Existing installation: preserve captures, scope settings, private evidence and
    schema. Do not run reset/reinstall SQL or revive archived log/Utilities overlays.
 8. Restart only the approved services/nodes, after confirming no capture is
@@ -103,8 +117,19 @@ node tools/dbninja.mjs apply <reviewed-plan.json>
 node tools/dbninja.mjs verify <reviewed-plan.json>
 ```
 
-Fresh schema DDL is generated on the target and reviewed/executed by the DBA.
-There is no portable pre-generated SQL, automatic grant or automatic restart.
+Fresh schema DDL is [included](sql/oracle/create-db-ninja.sql) for Oracle 19c,
+the unchanged Windchill 13.0.2.11 model, `wt.db.maxBytesPerChar=3`, explicit BYTE
+widths and INDX. Run `node tools/schema-package.mjs verify` and, on the exact
+prebuilt target, `node tools/schema-package.mjs verify --target`. Different
+profiles require target generation, not an edited manifest to bypass checks.
+The DBA separately reviews and executes the combined script; it is not an
+upgrade and must not run against existing or partial DB Ninja objects.
+There is no automatic grant or automatic restart.
+
+Use a tagged clone or the full source/install ZIP plus SHA256SUMS from
+[Releases](https://github.com/milesplay/WindchillDbNinja/releases).
+Verify the archive checksum before extraction and keep all tracked source,
+metadata, schema and tools: downloading only the JAR is not a valid handoff.
 
 `plan --reuse-installed` is only a packaging migration for a previously verified,
 unchanged JAR/ClassInfo on the same target. It is not a substitute for rebuilding

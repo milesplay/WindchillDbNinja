@@ -34,9 +34,10 @@ label or successful checksum alone is insufficient.
 The package contract is `prebuilt/DbCapture.jar`, exactly seven
 `prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files and
 `prebuilt/manifest.json` recording checksums, source fingerprints and target
-version/SDK fingerprints. It contains no PTC/Oracle libraries, generated PTC
-JavaScript bundles or portable pre-generated SQL. Fresh DDL is generated on the
-target and reviewed by the DBA, even when the JAR is prebuilt.
+version/SDK fingerprints. It contains no PTC/Oracle libraries or generated PTC
+JavaScript bundles. [Qualified custom schema DDL](sql/oracle/README.md) is included
+separately; it is not portable pre-generated SQL for arbitrary sites. A different
+schema profile requires target generation and DBA review, even with a prebuilt JAR.
 
 The publication build compiles all current runtime Java with the target SDK
 and `--release 17 -proc:none`, retaining only fingerprint-locked custom generated
@@ -89,6 +90,8 @@ automatic least-privilege recommendation. Existing/owned-object/per-table
 privileges may suffice for historical table reads; the monitoring flush has a
 separate requirement below. A DBA must decide and test the actual runtime operations.
 Do not expose SYSDBA credentials to an AI bot or put passwords in command arguments.
+Use [the AI/DBA database runbook](DATABASE-SETUP.md) for the explicit approval,
+grant application, schema-owner reconnection and post-DDL verification sequence.
 
 ### FLASHBACK and SNAPSHOT privilege checklist
 
@@ -125,13 +128,24 @@ The seven persisted model/association ClassInfo files must match the JAR.
 Legacy installations may also contain `DBCAPTURESQLEVENTS`; leave it and its
 data alone. The disabled heuristic correlator is not part of the installation.
 
-Generate DDL **on the target**, using its `wt.db.maxBytesPerChar` and tablespace
-configuration. The usual Oracle directories are `db/sql` (1), `db/sql2` (2)
-and `db/sql3` (3). Inspect the generator output; do not infer widths from this
-repository. `VARCHAR2(1200)` from one environment is not a portable schema contract.
+The [bundled first-install DDL](sql/oracle/README.md) is restricted to the
+unchanged Windchill 13.0.2.11 generated-model baseline, Oracle 19c,
+`wt.db.maxBytesPerChar=3`, explicit `VARCHAR2(n BYTE)`, the approved schema-default
+data tablespace and **INDX** for all primary-key/secondary indexes.
+Run `node tools/schema-package.mjs verify --target` for the prebuilt target's
+SDK/datecode and declared/propagated width. It does not establish Oracle
+connectivity, version, schema/PDB, tablespace capacity or quotas; the DBA does.
 
-Fresh-create SQL is only for an empty DB Ninja schema. Existing or partially
-created tables require DBA review/migration. Never drop existing capture history
+For a different model/release, byte-width or tablespace profile, generate DDL
+**on the target** using its actual configuration. The usual Oracle directories
+are `db/sql` (1), `db/sql2` (2) and `db/sql3` (3). Inspect the generator output;
+do not infer the profile from directory existence or scale widths by a ratio.
+PTC-generated widths may be capped at 4000 bytes.
+
+Fresh-create SQL is only for a Windchill schema with no existing DB Ninja objects.
+It supplies four primary keys and fourteen secondary indexes (18 indexes
+including the PK backing indexes). Existing or partially
+created objects require DBA review/migration. Never drop existing capture history
 to make an installation script succeed.
 
 ## Linux and Windows

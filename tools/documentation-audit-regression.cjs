@@ -9,7 +9,7 @@ const prose = name => read(name).replace(/\*\*/g, '').replace(/\s+/g, ' ');
 const englishDocs = [
   'README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'CUSTOMIZATION.md',
   'OPERATIONS.md', 'HANDOFF.md', 'PUBLICATION.md', 'LOCAL-INSTALL.md',
-  'USE-CASES.md', 'THIRD-PARTY-NOTICES.md',
+  'USE-CASES.md', 'THIRD-PARTY-NOTICES.md', 'CHANGELOG.md', 'sql/oracle/README.md', 'DATABASE-SETUP.md',
 ];
 const packageDocs = ['README.md', 'INSTALL.md', 'COMPATIBILITY.md', 'AGENTS.md', 'HANDOFF.md', 'PUBLICATION.md'];
 
@@ -38,7 +38,7 @@ for (const name of englishDocs) {
   });
 }
 
-for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md']) {
+for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md', 'DATABASE-SETUP.md']) {
   test(`${name}: deployment guidance explicitly prohibits production use`, () => {
     const text = prose(name);
     assert.match(text, /development and test environments only/i);
@@ -108,9 +108,63 @@ test('preflight and apply separate read-only inspection from prior authorization
   assert.match(text, /DBNINJA_ORACLE_CONFIRMED=yes/);
   assert.match(text, /scripts never restart Windchill or execute SQL/);
   assert.match(text, /flags record a decision already made/);
-  assert.match(text, /No portable pre-generated SQL is distributed/);
-  assert.match(text, /Fresh installation only: generate and initialize the schema/);
+  assert.match(text, /bundled SQL is profile-specific, not portable pre-generated SQL/);
+  assert.match(text, /Fresh installation only: initialize the schema/);
+  assert.match(text, /node tools\/schema-package\.mjs verify --target/);
   assert.match(text, /Have the DBA review/);
+});
+
+test('schema and release handoff exposes the missing DDL without implying automatic Oracle execution', () => {
+  const schema = prose('sql/oracle/README.md');
+  assert.match(schema, /4 tables, 4 primary keys, 14 secondary indexes and 4 table comments/);
+  assert.match(schema, /18 indexes in total/);
+  assert.match(schema, /wt\.db\.maxBytesPerChar/);
+  assert.match(schema, /VARCHAR2\(n BYTE\)/);
+  assert.match(schema, /INDX/);
+  assert.match(schema, /does not connect to Oracle/);
+  assert.match(schema, /not evidence that this exact combined script was executed/);
+  assert.match(schema, /Do not execute the eight input files separately/);
+  assert.match(prose('README.md'), /sql\/oracle\/create-db-ninja\.sql/);
+  assert.match(prose('README.md'), /releases\/tag\/v0\.1\.1/);
+  assert.match(prose('PUBLICATION.md'), /GitHub Packages is intentionally not required/);
+  assert.match(prose('PUBLICATION.md'), /git archive/);
+  assert.match(prose('PUBLICATION.md'), /SHA256SUMS/);
+  assert.match(prose('CHANGELOG.md'), /runtime redeployment or restart/);
+});
+
+test('AI database setup explicitly covers approved grants, schema-owner verification and CREATE acceptance', () => {
+  for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'sql/oracle/README.md']) {
+    assert.match(read(name), /DATABASE-SETUP\.md/);
+  }
+  const text = prose('DATABASE-SETUP.md');
+  assert.match(text, /Windchill-schema privilege grants, DDL table creation and post-change verification/);
+  assert.match(text, /explicit approval for those exact statements and a secure authorized grantor connection/);
+  assert.match(text, /GRANT CREATE TABLE TO <WINDCHILL_SCHEMA>/);
+  assert.match(text, /GRANT EXECUTE ON SYS\.DBMS_FLASHBACK/);
+  assert.match(text, /GRANT ANALYZE ANY/);
+  assert.match(text, /Do not grant `FLASHBACK ANY TABLE` by default/);
+  assert.match(text, /new Windchill schema-owner session/);
+  assert.match(text, /AS OF SCN <START_SCN>/);
+  assert.match(text, /VERSIONS BETWEEN SCN <START_SCN> AND <END_SCN>/);
+  assert.match(text, /monitoring flush/);
+  assert.match(text, /After the DBA explicitly approves table creation, the AI may execute/);
+  assert.match(text, /4 module tables.*4 enabled\/validated primary keys.*18 valid indexes/);
+  assert.match(text, /Do not request that passwords be pasted into chat/);
+  assert.match(text, /Existing or partially installed DB Ninja schemas do not run the CREATE script/);
+});
+
+test('public Oracle privilege template is non-executing and read-only probes do not flush or mutate', () => {
+  const template = read('sql/oracle-prerequisites.template.sql');
+  assert.match(template, /-- GRANT CREATE TABLE TO <WINDCHILL_SCHEMA>/);
+  assert.match(template, /-- GRANT EXECUTE ON SYS\.DBMS_STATS/);
+  assert.match(template, /-- ALTER USER <WINDCHILL_SCHEMA> QUOTA/);
+  assert.doesNotMatch(template.replace(/^--.*$/gm, ''), /^\s*(GRANT|REVOKE|ALTER|CREATE|BEGIN|EXECUTE)\b/im);
+  const checks = read('sql/oracle-check.sql').replace(/^--.*$/gm, '');
+  assert.match(checks, /CURRENT_SCHEMA/);
+  assert.match(checks, /FROM session_privs/);
+  assert.match(checks, /FROM user_ts_quotas/);
+  assert.doesNotMatch(checks, /^\s*(GRANT|REVOKE|ALTER|CREATE|BEGIN|INSERT|UPDATE|DELETE|TRUNCATE|DROP)\b/im);
+  assert.doesNotMatch(checks, /FLUSH_DATABASE_MONITORING_INFO/);
 });
 
 test('prebuilt verification and validation do not silently replace the target-build default', () => {

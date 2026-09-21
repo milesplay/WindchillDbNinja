@@ -98,7 +98,8 @@ Linux-only scope.
 The approved prebuilt packaging is new release work, not a relabeling of an old
 private build. Publication must check module-only contents, seven matching
 ClassInfo files, source-to-binary identity and target fingerprints. Never include
-PTC/Oracle libraries, generated PTC JavaScript bundles or portable pre-generated SQL.
+PTC/Oracle libraries, generated PTC JavaScript bundles or site-specific generated
+SQL. The 0.1.1 patch adds only the reviewed profile-specific custom CREATE DDL.
 
 ## Release 0.1.0 qualification: 2026-09-21
 
@@ -112,7 +113,8 @@ acceptance test. The prebuilt JAR is **254,435 bytes**, SHA-256:
 
 [The manifest](prebuilt/manifest.json) records every binary checksum, current
 runtime-source fingerprint and exact target SDK profile. It is the authoritative
-artifact identity; the eventual Git commit identifies the complete publication.
+artifact identity; Git commit `a6c6dbb189515512db295a08636100a33d7760da`
+identifies the initial 0.1.0 publication.
 The record separates revision/artifact identity, commands, exit statuses, counts
 and skips. If a scenario is not executed, keep that fact and its release impact
 explicit.
@@ -158,6 +160,44 @@ reloading the original catalog. A broader Start/transaction failure matrix and
 real Oracle boundary/undo/authorization behavior remain qualification work;
 they are not claimed as newly exercised live results.
 
+## Release 0.1.1 schema/distribution qualification: 2026-09-21
+
+This patch corrects the missing CREATE DDL and makes privilege grants, table
+creation and post-change verification explicit in the
+[AI/DBA database runbook](DATABASE-SETUP.md). It does not deploy the new collector
+implementation or perform any Oracle mutation.
+
+| Qualification | Verified result |
+|---|---|
+| DDL provenance | All 8 source scripts matched the retained PTC custom `sql3` output after only CRLF-to-LF and explicit VARCHAR2 BYTE normalization |
+| Schema inventory | 4 tables, 4 primary keys, 14 secondary indexes and 4 comments; 18 total indexes including PK backing indexes |
+| Schema/profile integrity | Offline checks passed for input/output fingerprints, unchanged model inputs, exact profile and deterministic guarded combined SQL |
+| Target profile inspection | Read-only prebuilt SDK/datecode/JDK check and installed xconfmanager plus propagated-properties check passed; `wt.db.maxBytesPerChar=3` |
+| Focused schema/publication/prebuilt/docs/install tests | **105/105 passed; zero failures, skips or TODOs** |
+| Complete Node suite | **301/301 passed; zero failures, skips or TODOs**, including actual Git staged-blob/completeness scenarios |
+| Complete selected-binary validation | `node tools/validate.mjs all --prebuilt` **exit 0**; all **24,036 Java assertions**, source/candidate contract variants, profiler API linkage, five JSPs and JS/XML checks reran successfully |
+| Fresh-install plan fixture | Exactly **28 runtime files** staged from the checkout without an installed DB Ninja JAR/ClassInfo; missing JSP/metadata rejected without target writes. Real JDK XML/property helpers; synthetic SDK/version probe, not a real fresh Windchill installation |
+| Existing-target read-only plan | Exactly **30 files** staged, including the two existing shared XCONF migration files; no apply performed |
+| Running-environment preservation | Hashes/modes of **88 protected live/SafeArea/configuration paths** and **9 SDK prerequisites** unchanged after validation |
+| Runtime identity | All **58 runtime/model/artifact files** (49 Java/resource inputs, 8 custom binary artifacts and the generated-model baseline) byte-identical to 0.1.0; original build timestamp retained |
+| Public package/index review | **160 files**, including all DDL and 8 approved custom binary artifacts; English documentation, known-private-pattern checks and actual staged-file/byte completeness passed |
+| Grant/DDL instructions | Explicit discovery, least-privilege approval, authorized grant application, new schema-owner session, historical-read/monitoring checks, CREATE execution and 4-table/4-PK/18-index acceptance documented; public grant template remains non-executing |
+| Actual Oracle grants / combined CREATE execution | **Not executed** in this publication task; requires separate environment/DBA authorization and target validation |
+| Live deployment / restart / capture | **Not performed**; prior icon deployment remains separate historical evidence |
+
+The JAR hash remains the 0.1.0 hash above. The combined CREATE script is
+9,779 bytes, SHA-256:
+
+```text
+a2b8b3ba92678fb315d64f7e014a9dbe8d84a2bf77d25a2b8eb5dfa8bffd1934
+```
+
+The shipped [schema profile](sql/oracle/schema-profile.json) restricts use to
+Oracle 19c, unchanged Windchill 13.0.2.11 models, width 3, explicit BYTE strings
+and INDX. Offline guards and synthetic tests are not Oracle execution evidence.
+Publication of a tag/ZIP also does not supply privileges or authorize a restart.
+Verify the exact tag and downloaded ZIP/checksum separately when distributing.
+
 ## Live checks not established for the new release
 
 - Ordinary-user denial after authentication, not only anonymous rejection.
@@ -174,8 +214,10 @@ package verification supplies credentials, DBA approval or a maintenance window.
 production.** Stop if the environment classification is unknown.
 
 Preflight is read-only. Apply requires prior maintenance and Oracle approval.
-Fresh schema SQL must be generated on the target, reviewed/executed by the DBA,
-and kept private. There are no automatic grants or restarts.
+Fresh schema SQL must match the reviewed target profile and be separately
+reviewed/executed by the DBA. The 0.1.1 patch includes the qualified custom
+CREATE script; other profiles require target generation, with site-specific
+output kept private. There are no automatic grants or restarts.
 
 ## Limits remain
 

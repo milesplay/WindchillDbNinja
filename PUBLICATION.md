@@ -7,15 +7,15 @@ The owner has authorized publication of custom source plus the custom compiled
 JAR/ClassInfo package after known defects are fixed, selected the
 [MIT License](LICENSE) (copyright 2026 milesplay), restricted the first binary
 to Linux, and selected strict endpoint NET semantics. These decisions are
-settled; they are not evidence of a commit, push, released binary, passing test
-suite or newly deployed runtime. No Git/network publication is performed by
-this documentation handoff.
+settled; approval alone is not evidence of a passing test suite or newly deployed
+runtime. The initial 0.1.0 package was published in commit
+`a6c6dbb189515512db295a08636100a33d7760da`; see [CHANGELOG.md](CHANGELOG.md)
+and [the qualification record](LOCAL-INSTALL.md) for each revision's scope.
 
-The maintainer has verified authenticated repository access and permission to
-push `main`. The checked starting revision contained only a blank README and
-no license; it was not a published DB Ninja package. Include the local MIT
-license in the reviewed publication. Repository access does not replace the
-remaining source/binary qualification or target authorization.
+The maintainer verified authenticated repository access and permission to
+push `main`. Preserve remote history and any subsequent contributor changes;
+do not force-push a release. Repository access does not replace qualification
+or target authorization.
 
 ## Public package
 
@@ -27,6 +27,12 @@ Use an explicit allowlist, not a wholesale copy of the working directory:
   [provenance](deployment/icons/README.md); no font files.
 - Deployment/validation tools and regression tests, read-only Oracle checks and
   review-only privilege guidance.
+- [The AI/DBA runbook](DATABASE-SETUP.md) covering explicit grant/DDL approval,
+  authorized application and post-change verification without embedded credentials.
+- The [qualified Oracle first-install schema](sql/oracle/README.md), with eight
+  custom CREATE inputs, the guarded combined script and model/profile checksums.
+  The exact profile is Oracle 19c, unchanged Windchill 13.0.2.11 models,
+  `wt.db.maxBytesPerChar=3`, explicit BYTE widths and INDX.
 - The exact approved compiled candidate:
 
   ```text
@@ -63,11 +69,13 @@ Windows is unsupported as shipped: POSIX permissions and `unix:nlink` are
 required, there is no NTFS ACL fallback, and no Windows certification is claimed.
 
 Do not include PTC/Oracle libraries, original PTC JSPs, generated PTC JavaScript
-bundles, portable pre-generated SQL, copied site configuration, credentials,
+bundles, site-specific generated SQL, copied site configuration, credentials,
 private build/backups, logs, captures, SQL/bind evidence or customer data.
 Non-English local documents remain local and are excluded from publication;
 shipped English documents must not link to excluded documents.
 Windchill and Oracle remain separately licensed prerequisites.
+The bundled custom DDL is profile-specific, not portable pre-generated SQL for
+arbitrary sites. It contains no PTC vendor schema, automatic grants or resets.
 
 ## Release gates
 
@@ -76,12 +84,14 @@ Windchill and Oracle remain separately licensed prerequisites.
 | Collector fixes | Current-source and selected-binary regressions for reliable activity selection, frozen/consistent table scope and strict endpoint NET. Insert then delete is net-zero; `A -> B -> delete` retains old value A. Do not weaken expectations to hide defects. |
 | Deployment/publication guards | The original path, DDL, rollback, Windows-command and staged-index fixtures now have maintainer-confirmed targeted passing evidence; see [the qualification record](LOCAL-INSTALL.md#deployment-and-publication-audit-findings). Final binary allowlisting and candidate index/history review remain release gates. |
 | Binary identity | A reviewed custom-only JAR, exactly seven matching ClassInfo files, manifest checksums/source fingerprints and matching target version/SDK fingerprints; no silent old-JAR fallback. |
+| Schema completeness | Eight CREATE input scripts plus deterministic guarded output, four tables/four PKs/fourteen secondary indexes, unchanged model/profile hashes and explicit Oracle/byte-width/tablespace conditions; no missing or additional schema inputs. |
 | Offline qualification | Run the complete suite against the selected candidate. Record revision/artifact identity, commands, exit status, counts and skips in [LOCAL-INSTALL.md](LOCAL-INSTALL.md). Source-only or icon-only success is insufficient. |
 | Clean package and Git review | Exercise an allowlist export/fresh checkout without private build/backup dependencies. Review actual staged bytes and history, including attachments; a working-tree scan alone is insufficient. |
 | Target acceptance | Separately authorized non-production installation, ordinary-user denial, actual browser behavior and disposable Oracle FLASHBACK/SNAPSHOT scenarios. Keep unexecuted live checks explicitly unverified. |
 | Published-link handoff | After publication, verify public README/package links and a clean checkout. An export or historical local installation does not prove public-link-only end-to-end deployment. |
 
-Final validation numbers are pending maintainer completion before commit.
+Record final validation numbers for each revision before commit in the
+[qualification summary](LOCAL-INSTALL.md), not only in a private terminal log.
 [Prior verified icon deployment](LOCAL-INSTALL.md#runtime-icon-deployment-2026-09-21)
 does not establish that new collector/helper fixes are installed. Do not call a
 failed, skipped, mocked or historical scenario a newly passed live test.
@@ -90,8 +100,9 @@ Windows qualification is outside this Linux-only release, not an implied pass.
 **Development and test environments only. Do not install or run DB Ninja in
 production.** An unknown environment classification is not approval.
 Preflight remains read-only; apply requires prior maintenance and Oracle
-approval. Fresh schema DDL is generated on the target and reviewed/executed by
-the DBA. There are no automatic grants or restarts.
+approval. Fresh schema DDL uses the exact qualified bundle or target generation
+and is separately reviewed/executed by the DBA. There are no automatic grants
+or restarts.
 
 ## Candidate checks and export
 
@@ -99,6 +110,7 @@ With the reviewed `WT_HOME` and `JAVA_HOME`:
 
 ```text
 node tools/prebuilt.mjs verify
+node tools/schema-package.mjs verify --target
 node tools/validate.mjs all --prebuilt
 node tools/check-publication.mjs --require-prebuilt --export
 ```
@@ -126,8 +138,32 @@ Before the maintainer commits, review `git status --short`, `git diff --cached`,
 `.gitignore` does not remove previously tracked files or sanitize historical
 blobs. A staged version can differ from the working copy. Run Git-dependent
 regressions with Git available rather than treating their skips as acceptance.
+The publication gate requires **every** reviewed file in the Git index and
+requires the indexed bytes to match the reviewed working tree, including DDL.
 Never upload private evidence to a public issue, release attachment or online
 scanner. No command here instructs an automatic push.
+
+## Releases and downloadable distribution
+
+Use a versioned GitHub **pre-release** for the Linux development/test preview.
+Build `WindchillDbNinja-<version>-linux-x64.zip` with `git archive` from the exact
+reviewed tag, using `WindchillDbNinja-<version>/` as its single root directory.
+Include all tracked source, prebuilt artifacts, DDL, tools, licenses and English
+documentation. Never archive the whole working directory or attach validation
+logs, backups, credentials or licensed SDK libraries.
+
+Upload the ZIP and a `SHA256SUMS` file containing its SHA-256 and filename.
+State the exact commit, profile, test scope and live-test limitations in English
+release notes. Verify the tag/commit, anonymously download both assets, compare
+the archive bytes/checksum and verify an extracted copy before reporting release
+completion. A source-hosting auto-generated archive is not a separate compiled
+build; the custom compiled resources are already tracked in this project.
+
+**GitHub Packages is intentionally not required.** This customization is not
+consumed as a Maven library, npm package or container image. A full Releases ZIP
+is the appropriate distribution; do not create an empty/unnecessary registry
+package or redistribute a licensed Windchill image just to fill the Packages UI.
+Keep `package.json` private; Node is used for local tools, not npm publication.
 
 ## Community and private disclosure
 

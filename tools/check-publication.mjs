@@ -6,10 +6,11 @@ import {actionIcons, bundle, confined} from './dbninja.mjs';
 import {validateActionIcon} from './icon-assets.mjs';
 import {readPrebuilt, prebuiltFiles} from './prebuilt.mjs';
 import {moduleJarEntries} from './module-archive.mjs';
+import {readSchemaPackage} from './schema-package.mjs';
 
 const documents = ['README.md', 'INSTALL.md', 'HANDOFF.md', 'AGENTS.md',
   'COMPATIBILITY.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
-  'LOCAL-INSTALL.md', 'USE-CASES.md'];
+  'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md'];
 const optionalDocuments = ['THIRD-PARTY-NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md'];
 const rootFiles = new Set(['.gitignore', '.gitattributes', 'package.json', 'LICENSE', ...documents]);
 const publicDirectories = ['customization/DbCapture', 'customization/configurations', 'deployment', 'tools', 'sql'];
@@ -139,14 +140,17 @@ function main() {
       if (!publicSet.has(relative)) throw new Error(`Missing published action icon asset: ${relative}`);
     }
   }
+  readSchemaPackage(bundle);
   if (fs.existsSync(path.join(bundle, '.git'))) {
     const git = spawnSync('git', ['-C', bundle, 'ls-files', '--stage', '-z'], {encoding: 'utf8'});
     if (git.error) throw new Error(`Cannot check this repository's Git index: ${git.error.message}`);
     if (git.status !== 0) throw new Error('Git index check failed; review permissions and repository state.');
+    const indexed = new Set();
     for (const entry of git.stdout.split('\0').filter(Boolean)) {
       const parsed = entry.match(/^(\d{6}) ([a-f0-9]{40,64}) ([0-3])\t([\s\S]+)$/);
       if (!parsed) throw new Error('Unexpected Git index entry; review the index manually.');
       const [, mode, objectId, stage, relative] = parsed;
+      indexed.add(relative);
       if (!publicSet.has(relative)) throw new Error(`Git already tracks an excluded/unclassified file: ${relative}`);
       if (stage !== '0' || !['100644', '100755'].includes(mode)) {
         throw new Error(`Unmerged, symlink or unsupported Git index entry: ${relative}`);
@@ -159,6 +163,8 @@ function main() {
         throw new Error(`Git index differs from the reviewed working tree: ${relative}; review and stage the intended content.`);
       }
     }
+    const omitted = files.filter(relative => !indexed.has(relative));
+    if (omitted.length) throw new Error(`Git index omits publication files: ${omitted.join(', ')}; review and stage the complete package.`);
     console.log('PASS: Git index paths and staged bytes match the reviewed publication files.');
   } else {
     console.log('NOTE: No .git entry at the publication root; no Git index was checked. Initialize a standalone clean export and re-run before committing.');
@@ -189,7 +195,7 @@ function main() {
     }
     console.log(`PUBLICATION_EXPORT=${output}`);
   }
-  console.log(`PASS: ${files.length} reviewed English-documentation/source/resource files; ${approvedArtifacts.size} approved custom binary artifacts and two approved action PNGs.`);
+  console.log(`PASS: ${files.length} reviewed English-documentation/source/resource files; ${approvedArtifacts.size} approved custom binary artifacts, two approved action PNGs and the complete qualified Oracle schema.`);
   console.log('No private backups, PTC SDK libraries or known site identifiers are approved. Human rights/confidentiality review remains required.');
 }
 
