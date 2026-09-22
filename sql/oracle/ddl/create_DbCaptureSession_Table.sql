@@ -1,5 +1,5 @@
 set echo on
-REM Creating table DbCaptureSession for com.ptc.dbcapture.DbCaptureSession
+REM Creating table DbCaptureSession for com.custom.dbcapture.DbCaptureSession
 set echo off
 CREATE TABLE DbCaptureSession (
    captureId   VARCHAR2(120 BYTE) NOT NULL,
@@ -31,6 +31,6 @@ ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 )
 /
-COMMENT ON TABLE DbCaptureSession IS 'Table DbCaptureSession created for com.ptc.dbcapture.DbCaptureSession'
+COMMENT ON TABLE DbCaptureSession IS 'Table DbCaptureSession created for com.custom.dbcapture.DbCaptureSession'
 /
-REM @//com/ptc/dbcapture/DbCaptureSession_UserAdditions
+REM @//com/custom/dbcapture/DbCaptureSession_UserAdditions

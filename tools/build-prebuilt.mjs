@@ -20,7 +20,7 @@ function main() {
       throw new Error(`Generated-model input changed: ${relative}. Regenerate with the licensed target CCD before reviewing a new baseline.`);
     }
   }
-  const baseJar = confined(home, 'custom/lib/DbCapture.jar');
+  const baseJar = confined(root, 'build/DbCapture.jar');
   const baseHash = fingerprint(baseJar);
   const baseEntries = moduleJarEntries(fs.readFileSync(baseJar));
   const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -30,7 +30,7 @@ function main() {
     }
   }
   for (const name of metadataNames) {
-    if (fingerprint(confined(home, `codebase/com/ptc/dbcapture/${name}`)) !== profile.metadata[name]) {
+    if (fingerprint(confined(root, `build/metadata/com/custom/dbcapture/${name}`)) !== profile.metadata[name]) {
       throw new Error(`Target ClassInfo baseline mismatch: ${name}`);
     }
   }
@@ -55,33 +55,34 @@ function main() {
     if (result.status !== 0) throw new Error(`${label} failed; inspect its private build log.`);
     return `${result.stdout || ''}${result.stderr || ''}`.trim();
   };
-  const compiler = path.join(javaHome, 'bin/javac');
+  const extension = process.platform === 'win32' ? '.exe' : '';
+  const compiler = path.join(javaHome, `bin/javac${extension}`);
   const compilerVersion = execute(compiler, ['-version'], 'compiler-version');
-  execute(compiler, ['-J-Xmx512m', `-J-Djava.io.tmpdir=${work}`, '--release', '17',
+  execute(compiler, ['-J-Xmx512m', `-J-Djava.io.tmpdir=${work}`, '--release', '11',
     '-encoding', 'UTF-8', '-proc:none', '-cp', classpath, '-d', classes,
     ...sourceNames.filter(name => name.endsWith('.java')).map(name => confined(root, name))], 'compile');
   const jar = path.join(work, 'DbCapture.jar');
-  execute(path.join(javaHome, 'bin/jar'), ['--create', '--file', jar, '-C', classes, '.'], 'jar');
+  execute(path.join(javaHome, `bin/jar${extension}`), ['--create', '--file', jar, '-C', classes, '.'], 'jar');
   const entries = moduleJarEntries(fs.readFileSync(jar));
   if (JSON.stringify(runtimeSources(root)) !== JSON.stringify(sourceNames)
       || sourceNames.some(name => fingerprint(confined(root, name)) !== sources[name])) {
     throw new Error('Runtime sources changed during compilation; do not publish this build.');
   }
   if (fingerprint(baseJar) !== baseHash || metadataNames.some(name =>
-    fingerprint(confined(home, `codebase/com/ptc/dbcapture/${name}`)) !== profile.metadata[name])) {
+    fingerprint(confined(root, `build/metadata/com/custom/dbcapture/${name}`)) !== profile.metadata[name])) {
     throw new Error('Target baseline changed during the read-only build.');
   }
   const outputs = new Map([['prebuilt/DbCapture.jar', fs.readFileSync(jar)]]);
   for (const name of metadataNames) {
-    outputs.set(`prebuilt/metadata/com/ptc/dbcapture/${name}`,
-      fs.readFileSync(confined(home, `codebase/com/ptc/dbcapture/${name}`)));
+    outputs.set(`prebuilt/metadata/com/custom/dbcapture/${name}`,
+      fs.readFileSync(confined(root, `build/metadata/com/custom/dbcapture/${name}`)));
   }
   const manifest = {
     schemaVersion: 1, package: 'windchill-db-ninja',
     version: JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version,
     target: profile.target,
     build: {method: 'target-sdk-javac-with-matching-generated-models', compiler: compilerVersion,
-      javaRelease: 17, builtAt: new Date().toISOString(), annotationProcessing: false,
+      javaRelease: 11, builtAt: new Date().toISOString(), annotationProcessing: false,
       generatedModelBaselineSha256: fingerprint(confined(root, 'deployment/generated-model-baseline.json')),
       note: 'All current runtime Java sources compiled. Only unchanged, fingerprint-locked custom generated model/resource entries and ClassInfo were retained from the qualified target. No live files, PTC SDK libraries or generated PTC JavaScript bundles are copied into this package.'},
     sdk: profile.sdk, sources,
@@ -101,6 +102,7 @@ function main() {
     fs.writeFileSync(pending, bytes, {flag: 'wx', mode: 0o644});
     fs.renameSync(pending, target);
   }
+  fs.rmSync(confined(root, 'prebuilt/metadata/com/ptc'), {recursive: true, force: true});
   readPrebuilt(root);
   console.log(`PASS: ${sourceNames.filter(name => name.endsWith('.java')).length} current sources compiled; ${entries.size} module-only JAR entries and seven matching ClassInfo files packaged.`);
   console.log('No annotation processing, live installation writes, deployment or database commands occurred.');

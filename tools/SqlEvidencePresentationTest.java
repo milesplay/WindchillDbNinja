@@ -1,6 +1,7 @@
-package com.ptc.dbcapture.diagnostics;
+package com.custom.dbcapture.diagnostics;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class SqlEvidencePresentationTest {
    private static int checks;
@@ -17,7 +18,8 @@ public final class SqlEvidencePresentationTest {
 
    private static void deepestSupportedStack() throws Exception {
       List<String> stack = java.util.stream.IntStream.range(0, 256)
-            .mapToObj(i -> "example.Frame" + i + ".call(Frame.java:" + i + ")").toList();
+            .mapToObj(i -> "example.Frame" + i + ".call(Frame.java:" + i + ")")
+            .collect(Collectors.toList());
       var request = SqlEvidencePresentation.requests(List.of(event(1, "deep", "deep-context",
             "UPDATE", stack, true))).get(0);
       var node = request.contexts().get(0).roots().get(0);
@@ -39,7 +41,7 @@ public final class SqlEvidencePresentationTest {
 
    private static void treeGrouping() throws Exception {
       List<String> stack = List.of(
-            "com.ptc.dbcapture.diagnostics.SqlEvidenceCapture.observe(SqlEvidenceCapture.java:1)",
+            "com.custom.dbcapture.diagnostics.SqlEvidenceCapture.observe(SqlEvidenceCapture.java:1)",
             "org.apache.logging.log4j.Logger.info(Logger.java:1)",
             "wt.pds.SQLDatabasePds.execute(SQLDatabasePds.java:10)",
             "wt.fc.StandardPersistenceManager.store(StandardPersistenceManager.java:20)",
@@ -67,7 +69,7 @@ public final class SqlEvidencePresentationTest {
       check(nativeCall.frame().startsWith("wt.pds.SQLDatabasePds.execute"),
             "native SQL issuing frame is next to the SQL leaves");
       check(nativeCall.statements().stream().map(SqlEvidencePresentation.StatementRef::sequence)
-                  .toList().equals(List.of(1L, 2L, 3L)),
+                  .collect(Collectors.toList()).equals(List.of(1L, 2L, 3L)),
             "equal paths are shared but repeated identical statements are never deduplicated");
       check(nativeCall.statements().get(0).label().equals("#1 CREATE (INSERT) WTPART"),
             "business CREATE is labelled as the actual INSERT, not CREATE TABLE");
@@ -235,13 +237,20 @@ public final class SqlEvidencePresentationTest {
 
    private static SqlEvidence.Event event(long sequence, String request, String context, String operation,
                                            List<String> stack, boolean truncated) {
+            String message;
+            switch (operation) {
+                  case "INSERT":
+                        message = "Insert Statement=INSERT INTO WTPART(name) VALUES (?)";
+                        break;
+                  case "UPDATE":
+                        message = "Update=UPDATE WTPART SET name=? WHERE idA2A2=?";
+                        break;
+                  default:
+                        message = "Delete=DELETE FROM WTPART WHERE idA2A2=?";
+            }
       return new SqlEvidence.Event(sequence, 1000 + sequence, 42, "ajp-nio-127.0.0.1-8010-exec-1",
             request, context, "test-admin", "test-admin", "/Windchill/ptc1/action", null, null,
-            new SqlEvidence.Statement(operation, "WTPART", switch (operation) {
-               case "INSERT" -> "Insert Statement=INSERT INTO WTPART(name) VALUES (?)";
-               case "UPDATE" -> "Update=UPDATE WTPART SET name=? WHERE idA2A2=?";
-               default -> "Delete=DELETE FROM WTPART WHERE idA2A2=?";
-            }), stack, truncated);
+                        new SqlEvidence.Statement(operation, "WTPART", message), stack, truncated);
    }
 
    private static void check(boolean condition, String message) {

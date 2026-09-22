@@ -6,11 +6,17 @@
 The owner has authorized publication of custom source plus the custom compiled
 JAR/ClassInfo package after known defects are fixed, selected the
 [MIT License](LICENSE) (copyright 2026 milesplay), restricted the first binary
-to Linux, and selected strict endpoint NET semantics. These decisions are
+to the reviewed Windows 12.1 target, and selected strict endpoint NET semantics. These decisions are
 settled; approval alone is not evidence of a passing test suite or newly deployed
 runtime. The initial 0.1.0 package was published in commit
 `a6c6dbb189515512db295a08636100a33d7760da`; see [CHANGELOG.md](CHANGELOG.md)
 and [the qualification record](LOCAL-INSTALL.md) for each revision's scope.
+
+The current release line is `v0.2.0-wc121-win1`, based on upstream `v0.1.1`.
+It contains the Windows 12.1 source port, target-qualified custom binary and
+the [Windows porting guide](WINDOWS-PORTING.md). A future Windows 13.0.2 port
+must use a separate branch, target-generated metadata and release line; it is
+not a re-labeling of this package.
 
 The maintainer verified authenticated repository access and permission to
 push `main`. Preserve remote history and any subsequent contributor changes;
@@ -31,13 +37,13 @@ Use an explicit allowlist, not a wholesale copy of the working directory:
   authorized application and post-change verification without embedded credentials.
 - The [qualified Oracle first-install schema](sql/oracle/README.md), with eight
   custom CREATE inputs, the guarded combined script and model/profile checksums.
-  The exact profile is Oracle 19c, unchanged Windchill 13.0.2.11 models,
+  The exact profile is Oracle 19c, unchanged Windchill 12.1.2.23 models,
   `wt.db.maxBytesPerChar=3`, explicit BYTE widths and INDX.
 - The exact approved compiled candidate:
 
   ```text
   prebuilt/DbCapture.jar
-  prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser   (exactly seven)
+  prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser   (exactly seven)
   prebuilt/manifest.json
   ```
 
@@ -48,7 +54,7 @@ classes and custom persistent metadata are authorized; the binary exception is
 not permission to publish arbitrary JARs or serialized files.
 
 Prebuilt assembly uses `tools/build-prebuilt.mjs`: all current runtime Java is
-compiled against the target SDK with `--release 17 -proc:none` into private
+compiled against the target SDK with `--release 11 -proc:none` into private
 output, then assembled as a fresh module-only JAR, not a stale implementation
 overlay. It retains only 15 fingerprint-locked custom generated entries
 (7 model bases, 3 association classes, 4 English `RB.ser` resources and a listener
@@ -62,11 +68,11 @@ unchanged generated model artifacts, not a new CCD or annotation-processing
 run**. There are no schema/annotation changes or live metadata writes in this
 assembly. A changed model or CPS requires target CCD and a reviewed new baseline.
 
-The exact first-binary baseline is **Windchill Services13.0.2.11 build32
-(13.0.2.0 CPS11), Corretto 17.0.12, Oracle 19c, Linux x64, traditional
+The exact first-binary baseline is **Windchill Services12.1.2.23 build38
+(12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64, traditional
 `codebase`**. Other CPS/SDK combinations require rebuild and qualification.
-Windows is unsupported as shipped: POSIX permissions and `unix:nlink` are
-required, there is no NTFS ACL fallback, and no Windows certification is claimed.
+Windows evidence storage is restricted to the reviewed local-NTFS ACL policy;
+other service identities and filesystems are not qualified.
 
 Do not include PTC/Oracle libraries, original PTC JSPs, generated PTC JavaScript
 bundles, site-specific generated SQL, copied site configuration, credentials,
@@ -95,7 +101,7 @@ Record final validation numbers for each revision before commit in the
 [Prior verified icon deployment](LOCAL-INSTALL.md#runtime-icon-deployment-2026-09-21)
 does not establish that new collector/helper fixes are installed. Do not call a
 failed, skipped, mocked or historical scenario a newly passed live test.
-Windows qualification is outside this Linux-only release, not an implied pass.
+Qualification applies only to the recorded Windows 12.1 target, not arbitrary Windows systems.
 
 **Development and test environments only. Do not install or run DB Ninja in
 production.** An unknown environment classification is not approval.
@@ -145,8 +151,8 @@ scanner. No command here instructs an automatic push.
 
 ## Releases and downloadable distribution
 
-Use a versioned GitHub **pre-release** for the Linux development/test preview.
-Build `WindchillDbNinja-<version>-linux-x64.zip` with `git archive` from the exact
+Use a versioned GitHub **pre-release** for the Windows development/test preview.
+Build `WindchillDbNinja-<version>-windows-x64.zip` with `git archive` from the exact
 reviewed tag, using `WindchillDbNinja-<version>/` as its single root directory.
 Include all tracked source, prebuilt artifacts, DDL, tools, licenses and English
 documentation. Never archive the whole working directory or attach validation
@@ -189,7 +195,7 @@ LOB representation, caps and Oracle undo constrain results.
 ## Suggested GitHub description
 
 > Explore how Windchill operations change Oracle data to guide QML reports,
-> customization and troubleshooting. Linux-only diagnostic customization for
+> customization and troubleshooting. Windows 12.1 diagnostic customization for
 > qualified development and test environments.
 
 Suggested topics: `windchill`, `ptc`, `plm`, `oracle`, `windchill-qml`,

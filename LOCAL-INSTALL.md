@@ -6,29 +6,29 @@ accounts, process identities, capture/data identifiers and private build paths.
 
 The owner has authorized custom source and custom JAR/ClassInfo publication at
 <https://github.com/milesplay/WindchillDbNinja> under [MIT](LICENSE), with a
-Linux-only first binary and strict endpoint NET semantics. This authorization
+Windows 12.1 target binary and strict endpoint NET semantics. This authorization
 does not attest to a commit/push, completed release tests or new live deployment.
 
 ## Exact binary baseline
 
 | Component | First-binary target |
 |---|---|
-| Windchill | Services13.0.2.11 build32 (13.0.2.0 CPS11) |
-| JDK | Amazon Corretto 17.0.12 |
+| Windchill | Services12.1.2.23 build38 (12.1.2.0 CPS23) |
+| JDK | Amazon Corretto 11.0.19 |
 | Database | Oracle 19c; target RU, schema/PDB privileges and undo still require DBA qualification |
-| OS/filesystem | Linux x64 with POSIX permissions and `unix:nlink` |
+| OS/filesystem | Windows x64 with local NTFS owner/system-administrator ACL enforcement |
 | Layout | Traditional `codebase`, with the installed PTC SDK/maintenance tools |
-| Distribution | Custom `prebuilt/DbCapture.jar`, seven matching `prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files and `prebuilt/manifest.json` |
+| Distribution | Custom `prebuilt/DbCapture.jar`, seven matching `prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files and `prebuilt/manifest.json` |
 
 The manifest requires checksums, source fingerprints and target version/SDK
 fingerprints. Other CPS/SDK combinations need rebuild and qualification.
-Windows is unsupported as shipped; no NTFS ACL fallback or Windows
-certification is claimed.
+This qualification is specific to the reviewed Windows service identity and
+local NTFS volume; it is not a general Windows certification.
 
 ### Prebuilt provenance
 
 The candidate assembly uses `tools/build-prebuilt.mjs` to compile all current
-runtime Java against the target SDK with `--release 17 -proc:none` into private
+runtime Java against the target SDK with `--release 11 -proc:none` into private
 output. It produces a fresh module-only JAR, not an overlay retaining stale
 implementation classes. Only 15 fingerprint-locked custom generated entries
 (7 model bases, 3 association classes, 4 English `RB.ser` resources and a listener
@@ -43,6 +43,35 @@ annotation-processing run**; there are no schema/annotation changes or live
 metadata writes. A changed model or CPS requires target CCD and a reviewed new
 baseline. Final candidate verification remains distinct from this assembly
 description.
+
+## Release 0.2.0 Windows 12.1 qualification: 2026-09-22
+
+This release records the completed Windows runtime fix and acceptance for the
+exact baseline above. It does not broaden the supported matrix to arbitrary
+Windows accounts, CPS levels, Java versions or clustered deployments.
+
+| Qualification | Verified result |
+|---|---|
+| Versioned package identity | `0.2.0-wc121-win1`; package metadata, prebuilt manifest and release documentation use the same version line |
+| Current-source build | All current runtime Java sources compiled with the target Java 11 SDK and `--release 11 -proc:none`; the candidate is a fresh module-only JAR |
+| Evidence-store regression | **272 assertions passed**, including repeated large metadata checkpoints with a concurrent Windows reader |
+| Documentation audit | **70/70 passed**, zero failures, skips or TODOs |
+| Prebuilt candidate verification | Exit 0 against the exact Windows x64 / Windchill 12.1.2.23 / Java 11 target |
+| Deployment | Reviewed 28-file SafeArea/xconf/JS plan applied; live and canonical SafeArea hashes matched after apply |
+| Restart | ServerManager and MethodServer restarted on the approved target; the new MethodServer log contains no ClassInfo registration or evidence persistence error |
+| Browser capture | A short empty administrator capture completed with zero changes and no warning/error text; the private metadata state was `COMPLETE` |
+| Windows evidence | Local NTFS evidence directory retained the owner-only ACL policy; metadata, events and lease files passed `icacls` processing |
+| Oracle row check | SELECT-only SQLcl query confirmed the corresponding session row was `COMPLETED`, `FLASHBACK`, zero table changes, with empty warning/error fields |
+| Endpoint security | Direct GET mutation returned the POST-required response; missing and wrong nonce POSTs returned HTTP 403 without starting a capture |
+| Ordinary-user authorization | Not executed because no separate ordinary-user test credential was supplied; do not treat administrator acceptance as this check |
+| Multi-node/failover and production scale | Not qualified; native SQL/call-tree evidence remains single-starting-node and this package remains development/test only |
+
+The Windows checkpoint fix catches an `AccessDeniedException` from atomic
+metadata replacement, revalidates the staged and target files, then uses a
+controlled Windows `REPLACE_EXISTING` fallback. The source and regression case
+are documented in [WINDOWS-PORTING.md](WINDOWS-PORTING.md). The earlier failed
+capture record remains historical evidence of the defect and is not counted as
+the new acceptance.
 
 ## Runtime icon deployment: 2026-09-21
 
@@ -91,9 +120,9 @@ create-only DDL shape validation, rollback prerequisite checks and staged-conten
 review. The maintainer has fixed the original path, DDL, rollback,
 Windows-command and staged-index failures and confirmed **22 targeted tests
 passed with actual Git and no skips**. This is targeted tool evidence, not a
-full source/binary verdict or a deployed-runtime result. Simulated
-Windows-command checks do not qualify a Windows runtime or expand the approved
-Linux-only scope.
+full source/binary verdict or a deployed-runtime result. Simulated command checks
+are supplemented by native Windows Java 11 NTFS, JSP, packaging and
+deployment-plan tests on the reviewed target.
 
 The approved prebuilt packaging is new release work, not a relabeling of an old
 private build. Publication must check module-only contents, seven matching
@@ -105,10 +134,10 @@ SQL. The 0.1.1 patch adds only the reviewed profile-specific custom CREATE DDL.
 
 The fixed-source and selected-prebuilt checks below completed successfully.
 These are offline/package results, not a new deployment or live Oracle
-acceptance test. The prebuilt JAR is **254,435 bytes**, SHA-256:
+acceptance test. The Windows prebuilt JAR is **254,462 bytes**, SHA-256:
 
 ```text
-69859afca0ed384566e90db8a8cb177da7976f6d7efcded9b7adba83c3fada72
+0f07c6191fa5d7b0a514e2a6345f99680a9ae03e93cdecb954578b0f0c26a4de
 ```
 
 [The manifest](prebuilt/manifest.json) records every binary checksum, current
@@ -123,16 +152,16 @@ explicit.
 |---|---|
 | Repository access and `main` push permission | Maintainer-confirmed; the checked starting revision had only a blank README and no license, not a DB Ninja release |
 | Targeted deployment/publication regressions | Original confinement, DDL, rollback, command-quoting and staged-blob failures now pass; Git-backed cases executed, not skipped |
-| Complete Node suite | **279/279 passed; zero failures, skips or TODOs** |
+| Complete Node suite | **301/301 passed; zero failures, skips or TODOs** |
 | Current-source compilation | **48 runtime Java files** compiled against the qualified SDK with `-proc:none`; generated model inputs and live installation unchanged |
 | Source-first strict contracts/helper/lifecycle | **147 + 18 + 29 checks passed**, including all five original contract failures and the named coupled fixes |
 | Actual packaged-JAR strict contracts/helper/lifecycle | The same **147 + 18 + 29 checks passed** with only tests compiled ahead of the prebuilt JAR, not fresh implementation classes |
-| Other selected-candidate groups | Scope/search 22,878; catalog 22; shipped-DDL 208; preference compatibility 8; presentation 92; object comparison 19; profiler 266; SQL/tree 77; DTO compatibility 11; smoke 32; icons 35 assertions passed, plus profiler API linkage |
+| Other selected-candidate groups | Scope/search 22,878; catalog 22; shipped-DDL 204; preference compatibility 8; presentation 92; object comparison 19; profiler 267; SQL/tree 77; DTO compatibility 11; smoke 32; icons 35 assertions passed, plus profiler API linkage |
 | JSP/JavaScript/XML | All **five JSPs** translated and compiled; script/XML checks passed. Existing deprecated/unchecked compiler notes remain visible |
 | Current-source JAR and matching ClassInfo | Fresh module-only JAR assembled; 15 fingerprint-locked generated entries and seven matching metadata files validated; no new CCD generation |
-| `node tools/prebuilt.mjs verify` | **Exit 0** against the exact Linux/SDK/JDK target |
+| `node tools/prebuilt.mjs verify` | **Exit 0** against the exact Windows/SDK/JDK target |
 | `node tools/validate.mjs all --prebuilt` | **Exit 0**, including the Node suite and both source/candidate contract variants |
-| `node tools/dbninja.mjs plan --prebuilt` | **Exit 0**; 30 files staged for the existing target, with no live files changed |
+| `node tools/dbninja.mjs plan --prebuilt` | **Exit 0**; 28 files staged for the fresh target, with no live files changed |
 | Publication content/binary scan | English-only candidate and all eight custom binary artifacts passed the allowlist, archive-content, checksums and private-pattern checks |
 | Git index/history and public checkout | Checked separately at publication time; Git-backed fixtures alone are not a review of the actual commit |
 | Public checkout and clean-target end-to-end installation | Not established by the prior local deployment |
@@ -142,7 +171,7 @@ Keep the tests' real expectations. Do not suppress failures or convert them to
 TODO passes. `all` is fail-fast; a stopped run does not execute later groups.
 Source-first compilation, a smaller passing subset and a package hash match are
 not substitutes for complete selected-binary qualification.
-The Java counts above total **24,036 assertions**, including duplicated
+The Java counts above total **24,033 assertions**, including duplicated
 source/candidate checks and exhaustive small-alphabet scope combinations; they
 are not 24,036 independent end-to-end scenarios.
 
@@ -152,7 +181,9 @@ fail-closed legacy logging, settings-related Stop cleanup, numeric capture-ID
 rollover and explicit identifier-width rejection. Destination/publication path
 confinement, every supported DDL statement/target, rollback prerequisites,
 Windows command construction and actual staged blobs are now guarded.
-Windows runtime support has not been added.
+The 0.1.0 record predates the Windows runtime port. Windows support is recorded
+for the exact 0.2.0 target above; the earlier statement must not be read as a
+current compatibility claim for other releases.
 
 The initial release remains single-process/node-qualified. Restart/cross-node
 baseline recovery warns that the current eligible scope is used rather than
@@ -193,7 +224,7 @@ a2b8b3ba92678fb315d64f7e014a9dbe8d84a2bf77d25a2b8eb5dfa8bffd1934
 ```
 
 The shipped [schema profile](sql/oracle/schema-profile.json) restricts use to
-Oracle 19c, unchanged Windchill 13.0.2.11 models, width 3, explicit BYTE strings
+Oracle 19c, unchanged Windchill 12.1.2.23 models, width 3, explicit BYTE strings
 and INDX. Offline guards and synthetic tests are not Oracle execution evidence.
 Publication of a tag/ZIP also does not supply privileges or authorize a restart.
 Verify the exact tag and downloaded ZIP/checksum separately when distributing.

@@ -19,10 +19,10 @@ import org.xml.sax.InputSource;
 /** Local packaging helper; never loaded by Windchill. */
 public final class ConfigurationFiles {
     private static final String SERVICE =
-        "com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService";
+        "com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService";
     private static final Set<String> SETTINGS = Set.of(
-        "com.ptc.dbcapture.excludeTables", "com.ptc.dbcapture.maxRowsPerTable",
-        "com.ptc.dbcapture.correlateLogs");
+        "com.custom.dbcapture.excludeTables", "com.custom.dbcapture.maxRowsPerTable",
+        "com.custom.dbcapture.correlateLogs");
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
@@ -66,9 +66,11 @@ public final class ConfigurationFiles {
             }
             for (Node node = root.getFirstChild(); node != null;) {
                 Node next = node.getNextSibling();
-                if (node instanceof Element element
-                        && ("migrate".equals(args[0]) ? ownedDeclaration(element) : ownedReference(element))) {
-                    root.removeChild(node);
+                if (node instanceof Element) {
+                    Element element = (Element) node;
+                    if ("migrate".equals(args[0]) ? ownedDeclaration(element) : ownedReference(element)) {
+                        root.removeChild(node);
+                    }
                 }
                 node = next;
             }
@@ -136,11 +138,14 @@ public final class ConfigurationFiles {
         }
         Element global = null;
         for (Node node = root.getFirstChild(); node != null; node = node.getNextSibling()) {
-            if (node instanceof Element element && "global".equals(element.getTagName())) {
-                if (global != null) {
-                    throw new IllegalArgumentException("Multiple global categories; merge manually.");
+            if (node instanceof Element) {
+                Element element = (Element) node;
+                if ("global".equals(element.getTagName())) {
+                    if (global != null) {
+                        throw new IllegalArgumentException("Multiple global categories; merge manually.");
+                    }
+                    global = element;
                 }
-                global = element;
             }
         }
         if (global == null) {

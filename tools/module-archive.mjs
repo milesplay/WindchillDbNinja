@@ -53,21 +53,21 @@ export function moduleJarEntries(bytes) {
       throw new Error('Module JAR content checksum/size mismatch.');
     }
     if (name.endsWith('/')) {
-      if (size !== 0 || !(name === 'META-INF/' || /^(?:com\/|com\/ptc\/|com\/ptc\/dbcapture\/(?:[A-Za-z0-9_$]+\/)*)$/.test(name))) {
+      if (size !== 0 || !(name === 'META-INF/' || /^(?:com\/|com\/custom\/|com\/custom\/dbcapture\/(?:[A-Za-z0-9_$]+\/)*)$/.test(name))) {
         throw new Error('Unexpected module JAR directory.');
       }
     } else if (name !== 'META-INF/MANIFEST.MF' && name !== 'META-INF/ptc.listeners.lst'
-        && !/^com\/ptc\/dbcapture\/(?:[A-Za-z0-9_$]+\/)*[A-Za-z0-9_$]+\.(?:class|RB\.ser)$/.test(name)) {
+        && !/^com\/custom\/dbcapture\/(?:[A-Za-z0-9_$]+\/)*[A-Za-z0-9_$]+\.(?:class|RB\.ser)$/.test(name)) {
       throw new Error(`Non-module or unapproved JAR entry: ${name}`);
     }
     if (name.endsWith('.class')
         && (data.length < 8 || data.readUInt32BE(0) !== 0xcafebabe || data.readUInt16BE(4) === 65535
-          || data.readUInt16BE(6) > 61)) throw new Error('Unsupported module class-file version.');
+          || data.readUInt16BE(6) !== 55)) throw new Error('Unsupported module class-file version.');
     entries.set(name, data);
     offset = next;
   }
-  if (offset !== end || !entries.has('com/ptc/dbcapture/StandardDbCaptureService.class')
-      || !entries.has('com/ptc/dbcapture/dbCaptureActionResource.class')) {
+  if (offset !== end || !entries.has('com/custom/dbcapture/StandardDbCaptureService.class')
+      || !entries.has('com/custom/dbcapture/dbCaptureActionResource.class')) {
     throw new Error('Incomplete module JAR.');
   }
   return entries;

@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" trimDirectiveWhitespaces="true"
-%><%@ page import="com.ptc.dbcapture.DbCaptureObjectReader"
+%><%@ page import="com.custom.dbcapture.DbCaptureObjectReader"
 %><%@ page import="wt.util.HTMLEncoder"
 %><%
    response.setHeader("Cache-Control", "no-store");
@@ -7,20 +7,20 @@
    DbCaptureObjectReader.Snapshot snapshot = null;
    String problem = null;
    try {
-      com.ptc.dbcapture.DbCaptureAuthorization.requireAdministrator();
+      com.custom.dbcapture.DbCaptureAuthorization.requireAdministrator();
    } catch (wt.util.WTException e) {
       problem = e.getMessage() == null ? e.toString() : e.getMessage();
       response.setStatus(403);
-      org.apache.logging.log4j.LogManager.getLogger("com.ptc.dbcapture.objectDetails")
+      org.apache.logging.log4j.LogManager.getLogger("com.custom.dbcapture.objectDetails")
             .warn("Captured-object read denied.", e);
    }
    if (problem == null) {
       try {
-         snapshot = com.ptc.dbcapture.DbCaptureHelper.service.inspectObject(request.getParameter("entry"));
+         snapshot = com.custom.dbcapture.DbCaptureHelper.service.inspectObject(request.getParameter("entry"));
       } catch (wt.util.WTException | IllegalArgumentException e) {
          problem = e.getMessage() == null ? e.toString() : e.getMessage();
          response.setStatus(400);
-         org.apache.logging.log4j.LogManager.getLogger("com.ptc.dbcapture.objectDetails")
+         org.apache.logging.log4j.LogManager.getLogger("com.custom.dbcapture.objectDetails")
                .error("Captured-object read failed.", e);
       }
    }

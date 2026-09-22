@@ -1,4 +1,4 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,42 +20,48 @@ public final class DiagnosticsReportCompatibilityTest {
 
    public static void main(String[] args) throws Exception {
       Path fixture = Path.of(args[0]);
-      Path source = fixture.resolve("legacy-source/com/ptc/dbcapture/DbCaptureDiagnostics.java");
+      Path source = fixture.resolve("legacy-source/com/custom/dbcapture/DbCaptureDiagnostics.java");
       Path classes = fixture.resolve("legacy-classes");
       Files.createDirectories(source.getParent());
       Files.createDirectories(classes);
-      Files.writeString(source, """
-            package com.ptc.dbcapture;
-            import java.util.List;
-            import com.ptc.dbcapture.diagnostics.SqlEvidencePresentation;
-            import com.ptc.dbcapture.diagnostics.CaptureHealth;
-            public final class DbCaptureDiagnostics {
-               public record Report(String captureId, String state, String reason, String node, long startedMillis,
-                     long finishedMillis, long observed, long filtered, long rejected, long failed,
-                     long unfinished, long discarded, int recorded, List<String> tables,
-                     List<SqlEvidencePresentation.Request> requests, String captureStatus, String mode,
-                     String warnings, String error, CaptureHealth.Assessment health)
-                     implements java.io.Serializable { }
-               public static Report fixture() {
-                  return new Report("CAP-LEGACY", "COMPLETE", "Saved evidence", "saved-node", 10, 20,
-                        7, 2, 1, 0, 0, 0, 4, List.of("WTPART"), List.of(),
-                        "COMPLETED", "FLASHBACK", "Saved warning", null, null);
-               }
-            }
-            """);
+      Files.writeString(source, String.join("\n",
+         "package com.custom.dbcapture;",
+         "import java.util.List;",
+         "public final class DbCaptureDiagnostics {",
+         "  public static final class Report implements java.io.Serializable {",
+         "    private static final long serialVersionUID = 0L;",
+         "    private final String captureId;",
+         "    private final long startedMillis;",
+         "    private final long observed;",
+         "    private final int recorded;",
+         "    private final List<String> tables;",
+         "    public Report(String captureId, long startedMillis, long observed, int recorded, List<String> tables) {",
+         "      this.captureId = captureId; this.startedMillis = startedMillis; this.observed = observed;",
+         "      this.recorded = recorded; this.tables = tables;",
+         "    }",
+         "    public String captureId() { return captureId; }",
+         "    public long startedMillis() { return startedMillis; }",
+         "    public long observed() { return observed; }",
+         "    public int recorded() { return recorded; }",
+         "    public List<String> tables() { return tables; }",
+         "  }",
+         "  public static Report fixture() {",
+         "    return new Report(\"CAP-LEGACY\", 10L, 7L, 4, List.of(\"WTPART\"));",
+         "  }",
+         "}", ""));
       var compiler = ToolProvider.getSystemJavaCompiler();
-      check(compiler != null, "Java 17 compiler is available for the independent legacy DTO fixture");
+      check(compiler != null, "Java 11 compiler is available for the independent legacy DTO fixture");
       try (var files = compiler.getStandardFileManager(null, null, null)) {
-         check(compiler.getTask(null, files, null, List.of("--release", "17", "-proc:none",
+         check(compiler.getTask(null, files, null, List.of("--release", "11", "-proc:none",
                "-classpath", System.getProperty("java.class.path"), "-d", classes.toString()), null,
-               files.getJavaFileObjects(source.toFile())).call(), "the unchanged legacy record shape compiles");
+               files.getJavaFileObjects(source.toFile())).call(), "the Java 11 legacy DTO shape compiles");
       }
       try (var legacy = new URLClassLoader(new URL[] { classes.toUri().toURL() },
             DiagnosticsReportCompatibilityTest.class.getClassLoader()) {
          @Override
          protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            if (name.equals("com.ptc.dbcapture.DbCaptureDiagnostics")
-                  || name.equals("com.ptc.dbcapture.DbCaptureDiagnostics$Report")) {
+            if (name.equals("com.custom.dbcapture.DbCaptureDiagnostics")
+                  || name.equals("com.custom.dbcapture.DbCaptureDiagnostics$Report")) {
                synchronized (getClassLoadingLock(name)) {
                   Class<?> loaded = findLoadedClass(name);
                   if (loaded == null) loaded = findClass(name);
@@ -66,11 +72,11 @@ public final class DiagnosticsReportCompatibilityTest {
             return super.loadClass(name, resolve);
          }
       }) {
-         Class<?> oldReport = legacy.loadClass("com.ptc.dbcapture.DbCaptureDiagnostics$Report");
+         Class<?> oldReport = legacy.loadClass("com.custom.dbcapture.DbCaptureDiagnostics$Report");
          check(ObjectStreamClass.lookup(oldReport).getSerialVersionUID() == 0L
                && ObjectStreamClass.lookup(DbCaptureDiagnostics.Report.class).getSerialVersionUID() == 0L,
-               "the default legacy record serialVersionUID is preserved explicitly");
-         Object old = legacy.loadClass("com.ptc.dbcapture.DbCaptureDiagnostics").getMethod("fixture").invoke(null);
+               "the legacy DTO serialVersionUID is preserved explicitly");
+         Object old = legacy.loadClass("com.custom.dbcapture.DbCaptureDiagnostics").getMethod("fixture").invoke(null);
          var migrated = (DbCaptureDiagnostics.Report) deserialize(serialize(old), null);
          check(migrated.captureId().equals("CAP-LEGACY") && migrated.tables().equals(List.of("WTPART"))
                && migrated.recorded() == 4 && migrated.startedMillis() == 10 && migrated.observed() == 7,
@@ -129,7 +135,7 @@ public final class DiagnosticsReportCompatibilityTest {
       try (var input = new ObjectInputStream(new ByteArrayInputStream(bytes)) {
          @Override
          protected Class<?> resolveClass(ObjectStreamClass descriptor) throws java.io.IOException, ClassNotFoundException {
-            if (loader != null && descriptor.getName().equals("com.ptc.dbcapture.DbCaptureDiagnostics$Report")) {
+            if (loader != null && descriptor.getName().equals("com.custom.dbcapture.DbCaptureDiagnostics$Report")) {
                return loader.loadClass(descriptor.getName());
             }
             return super.resolveClass(descriptor);

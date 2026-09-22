@@ -105,8 +105,8 @@ test('XML merges preserve unrelated nodes, comments, Unicode and exact site valu
         + '<!DOCTYPE Configuration SYSTEM "xconf.dtd">\n'
         + '<Configuration xmlns:xlink="http://www.w3.org/1999/xlink"><!-- preserve me -->'
         + '<Property name="site.example" value="A &amp; B \u65e5\u672c" targetFile="codebase/wt.properties"/>'
-        + '<Property name="wt.services.service.905000" value="com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService"/>'
-        + '<Property name="com.ptc.dbcapture.maxRowsPerTable" value="321"/>'
+        + '<Property name="wt.services.service.905000" value="com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService"/>'
+        + '<Property name="com.custom.dbcapture.maxRowsPerTable" value="321"/>'
         + '<AddToProperty name="netmarkets.presentation.jsFiles" value="custom/Unrelated/main.js"/>'
         + '<AddToProperty name="netmarkets.presentation.jsFiles" value="custom/DbCapture/dbCaptureHeader-v1.js"/>'
         + '<AddToProperty name="netmarkets.presentation.cssFiles" value="custom/DbCapture/dbCapture-v1.css"/>'
@@ -117,7 +117,7 @@ test('XML merges preserve unrelated nodes, comments, Unicode and exact site valu
       assert.match(text, /preserve me/);
       assert.match(text, /A &amp; B \u65e5\u672c/);
       assert.match(text, /custom\/Unrelated\/main.js/);
-      assert.doesNotMatch(text, /com.ptc.dbcapture|custom\/DbCapture|905000/);
+      assert.doesNotMatch(text, /com.custom.dbcapture|custom\/DbCapture|905000/);
       assert.match(text, /DOCTYPE Configuration SYSTEM "xconf.dtd"/);
       configuration(env, 'migrate', output, path.join(directory, 'twice.xconf'));
       assert.equal(fs.readFileSync(path.join(directory, 'twice.xconf'), 'utf8'), text);
@@ -150,8 +150,8 @@ test('planning stages the complete additive package without changing the target;
     const originalOracle = process.env.DBNINJA_ORACLE_CONFIRMED;
     try {
       put(directory, 'codebase/wt.properties',
-        'wt.services.service.905000=com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService\n'
-        + 'com.ptc.dbcapture.maxRowsPerTable=321\ncom.ptc.dbcapture.correlateLogs=false\n');
+        'wt.services.service.905000=com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService\n'
+        + 'com.custom.dbcapture.maxRowsPerTable=321\ncom.custom.dbcapture.correlateLogs=false\n');
       put(directory, 'codebase/presentation.properties',
         'netmarkets.presentation.jsFiles=custom/Unrelated/main.js;custom/DbCapture/dbCaptureHeader-v1.js\n'
         + 'netmarkets.presentation.cssFiles=custom/Unrelated/site.css\n');
@@ -166,8 +166,8 @@ test('planning stages the complete additive package without changing the target;
       put(directory, 'codebase/netmarkets/javascript/util/main.js', 'original main');
       const names = ['DbCaptureAttrDelta', 'DbCaptureChange', 'DbCaptureSession', 'DbCaptureTableChange',
         'DbCaptureChangeDeltaLink', 'DbCaptureSessionChangeLink', 'DbCaptureSessionTableLink'];
-      for (const name of names) put(directory, `codebase/com/ptc/dbcapture/${name}.ClassInfo.ser`, 'fixture');
-      put(directory, 'servlet-fixture/jakarta/servlet/http/HttpServletRequest.class', 'fixture');
+      for (const name of names) put(directory, `codebase/com/custom/dbcapture/${name}.ClassInfo.ser`, 'fixture');
+      put(directory, 'servlet-fixture/javax/servlet/http/HttpServletRequest.class', 'fixture');
       fs.mkdirSync(path.join(directory, 'tomcat/lib'), {recursive: true});
       const jar = spawnSync(path.join(env.javaHome, `bin/jar${exe}`),
         ['cf', path.join(directory, 'tomcat/lib/servlet-api.jar'), '-C', path.join(directory, 'servlet-fixture'), '.']);
@@ -177,7 +177,7 @@ test('planning stages the complete additive package without changing the target;
       assert.equal(fingerprint(path.join(directory, 'codebase/wt.properties')), original);
       assert.equal(fs.existsSync(path.join(directory, 'wtSafeArea')), false);
       const plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
-      assert.equal(plan.settings['com.ptc.dbcapture.maxRowsPerTable'], '321');
+      assert.equal(plan.settings['com.custom.dbcapture.maxRowsPerTable'], '321');
       if (process.platform !== 'win32') {
         assert.equal(fs.statSync(path.join(path.dirname(planFile), 'siteMod/codebase/customroleaccessprefs.xml')).mode & 0o777, 0o600);
       }

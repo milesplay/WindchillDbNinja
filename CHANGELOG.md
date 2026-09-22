@@ -1,13 +1,34 @@
 # Changelog
 
+## 0.2.0-wc121-win1 - Windchill 12.1 Windows port
+
+- Port the runtime and validation suite to Windchill 12.1.2.23, Java 11 and
+  `javax.servlet` on Windows Server.
+- Move custom persistent identities to `com.custom.dbcapture` for a confirmed
+  fresh installation and regenerate the JAR, seven ClassInfo files and Oracle
+  `sql3` DDL with the target SDK.
+- Replace POSIX-only evidence storage checks with local-NTFS owner ACL,
+  reparse-point and stable-identity validation.
+- Require POST plus Windchill CSRF nonces for direct JSP mutations and use the
+  installed container administrator API instead of localized group names.
+- Add Windows-native build, package, schema, JSP, rollback and publication
+  regression coverage, plus the reusable Windows porting guide for future
+  Windchill 13.0.2 targets.
+- Fix Windows metadata checkpoint replacement under concurrent reads with a
+  guarded non-atomic replacement fallback and a large-metadata concurrency test.
+- Verify the exact non-production target with a restarted MethodServer, a short
+  empty capture, private NTFS evidence and a SELECT-only Oracle row check.
+- Ordinary-user acceptance, multi-node/failover behavior and production-scale
+  performance remain separate qualification work.
+
 ## 0.1.1 - Oracle schema and distribution patch
 
-Linux x64 development/test preview, not a production release.
+Windows x64 development/test preview, not a production release.
 
 - Add the previously omitted DB Ninja CREATE TABLE/index DDL under
   [sql/oracle](sql/oracle/README.md): 4 tables, 4 primary keys, 14 secondary
   indexes and 4 comments, plus a guarded combined first-install script.
-- Lock the bundled profile to the unchanged Windchill 13.0.2.11 generated model,
+- Lock the bundled profile to the unchanged Windchill 12.1.2.23 generated model,
   Oracle 19c, `wt.db.maxBytesPerChar=3`, explicit VARCHAR2 BYTE semantics and
   the INDX index tablespace. Other profiles require target generation/DBA review.
 - Refuse reserved table/index/constraint conflicts before the first CREATE,
@@ -35,7 +56,7 @@ documentation; it excludes private build output and licensed vendor libraries.
 
 ## 0.1.0 - Initial repository publication
 
-- Publish custom source, compiled Linux x64 JAR/ClassInfo, deployment/validation
+- Publish custom source, compiled Windows x64 JAR/ClassInfo, deployment/validation
   tools and English documentation under MIT.
 - Correct activity selection, frozen table scope, strict endpoint NET semantics
   and the confirmed deployment/publication guards.

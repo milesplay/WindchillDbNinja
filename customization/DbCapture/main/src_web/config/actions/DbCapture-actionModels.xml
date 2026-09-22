@@ -26,13 +26,13 @@
    <!-- One Delete, in the sessions toolbar. It was previously also declared as
         a row action, which is why the table showed the button twice. -->
    <model name="dbcapture session table toolbar"
-          resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+          resourceBundle="com.custom.dbcapture.dbCaptureActionResource">
       <action name="editDbCaptureDescription" type="dbcapture" shortcut="true"/>
       <action name="deleteDbCaptureSession" type="dbcapture" shortcut="true"/>
    </model>
 
    <model name="dbcapture change table toolbar"
-          resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+          resourceBundle="com.custom.dbcapture.dbCaptureActionResource">
       <action name="exportDbCaptureChangesCsv" type="dbcapture" shortcut="true"/>
    </model>
 </actionmodels>

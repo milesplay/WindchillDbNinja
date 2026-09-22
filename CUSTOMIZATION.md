@@ -38,7 +38,7 @@ Paths in the runtime column are relative to the reviewed Windchill home.
 | Source / artifact | Runtime destination / mechanism |
 |---|---|
 | Validated target-build or exact-baseline prebuilt JAR | `custom/lib/DbCapture.jar` |
-| Seven ClassInfo files matching the selected JAR | `codebase/com/ptc/dbcapture/*.ClassInfo.ser` |
+| Seven ClassInfo files matching the selected JAR | `codebase/com/custom/dbcapture/*.ClassInfo.ser` |
 | Module `src_web/config/actions/DbCapture-*.xml` | `codebase/config/actions/DbCapture-*.xml`, registered through ordered-set XCONF entries |
 | Module `src_web/config/mvc/DbCapture-configs.xml` | `codebase/config/mvc/DbCapture-configs.xml`, custom Spring/MVC configuration |
 | Module service declarations | `custom/DbCapture/xconf/DbCapture.service.properties.xconf` |
@@ -50,7 +50,7 @@ Paths in the runtime column are relative to the reviewed Windchill home.
 | Custom URL-validator XML | `codebase/config/urlValidators/DbCapture-validators.xml` |
 | UI-component registration template | Merged into `codebase/customroleaccessprefs.xml`; unrelated components preserved |
 
-The existing `com.ptc.dbcapture` names are historical persistent identities.
+The existing `com.custom.dbcapture` names are historical persistent identities.
 They are retained for recorded objects, associations, action resources and
 serialized evidence compatibility. They do not imply PTC authorship. A namespace
 change requires an explicit data-migration/compatibility project; this packaging

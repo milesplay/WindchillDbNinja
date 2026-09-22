@@ -10,14 +10,17 @@ approval or maintenance authorization. Given access to an authorized target:
    [OPERATIONS.md](OPERATIONS.md). Use [USE-CASES.md](USE-CASES.md) to understand
    the intended QML/customization/troubleshooting workflows. Treat [LOCAL-INSTALL.md](LOCAL-INSTALL.md)
    as evidence about one environment, not a target configuration.
+  For Windows porting or a new Windchill release, read
+  [WINDOWS-PORTING.md](WINDOWS-PORTING.md) before selecting or rebuilding a
+  binary.
 2. Discover and verify the actual Windchill home, release/CPS, deployment layout,
    owner account, OS, supported JDK, Node version, database vendor/container/schema,
    application nodes, environment classification and maintenance procedure.
    Do not guess them. Development and test environments only: do not install or
    run DB Ninja in production.
 3. Confirm authorization. Stop for production or unknown environment
-   classification, Windows (unsupported POSIX/unix evidence storage),
-   non-Oracle, `javax.servlet`, managed-cloud
+  classification, non-Windows/non-NTFS evidence storage, non-Oracle,
+  non-`javax.servlet`, managed-cloud
    restrictions, `codebase.war`, service-slot conflicts, unreviewed DB privileges,
    active captures or unavailable maintenance approval. Never work around permissions.
 4. Run the read-only filesystem preflight and the separately approved database
@@ -66,11 +69,10 @@ approval or maintenance authorization. Given access to an authorized target:
 
 ## Commands
 
-Use Linux x64 and a filesystem providing POSIX permissions and `unix:nlink`.
-The exact first-binary baseline is Windchill Services13.0.2.11 build32
-(13.0.2.0 CPS11), Corretto 17.0.12, Oracle 19c and traditional `codebase`.
-Other CPS/SDK combinations require rebuild and qualification. No Windows
-certification is claimed.
+Use Windows x64 and a local NTFS filesystem with the module's verified ACL policy.
+The exact first-binary baseline is Windchill Services12.1.2.23 build38
+(12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c and traditional `codebase`.
+Other CPS/SDK/filesystem combinations require rebuild and qualification.
 
 After setting the reviewed target environment, read-only preflight comes first:
 
@@ -95,13 +97,13 @@ node tools/dbninja.mjs plan --prebuilt
 ```
 
 The package is `prebuilt/DbCapture.jar`, exactly seven
-`prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files and
+`prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files and
 `prebuilt/manifest.json` with checksums, source fingerprints and target
 version/SDK fingerprints. Do not override a mismatch or silently use an
 installed JAR.
 
 The prebuilt assembly compiles all current runtime Java using the target SDK
-with `--release 17 -proc:none` into a fresh module-only JAR, not a stale class
+with `--release 11 -proc:none` into a fresh module-only JAR, not a stale class
 overlay. It retains only fingerprint-locked custom generated entries and
 matching ClassInfo from the prior verified CCD generation, recorded in
 `deployment/generated-model-baseline.json`. This is current-source compilation
@@ -118,7 +120,7 @@ node tools/dbninja.mjs verify <reviewed-plan.json>
 ```
 
 Fresh schema DDL is [included](sql/oracle/create-db-ninja.sql) for Oracle 19c,
-the unchanged Windchill 13.0.2.11 model, `wt.db.maxBytesPerChar=3`, explicit BYTE
+the unchanged Windchill 12.1.2.23 model, `wt.db.maxBytesPerChar=3`, explicit BYTE
 widths and INDX. Run `node tools/schema-package.mjs verify` and, on the exact
 prebuilt target, `node tools/schema-package.mjs verify --target`. Different
 profiles require target generation, not an edited manifest to bypass checks.

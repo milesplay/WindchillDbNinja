@@ -4,6 +4,10 @@ This is a **qualification matrix**, not a vendor support matrix. PTC's support
 policy for the underlying Windchill/OS/JDK/Oracle combination still applies.
 Do not install a newer JDK or database release merely because a row below mentions it.
 
+The qualified Windows 12.1 release is `v0.2.0-wc121-win1`. A Windows 13.0.2
+port is a separate target exercise; follow [WINDOWS-PORTING.md](WINDOWS-PORTING.md)
+and do not reuse the 12.1 JAR, ClassInfo files, manifest or generated DDL.
+
 **Development and test environments only. Do not install or run DB Ninja in
 production**, including a technically compatible stack. An unknown environment
 classification must be resolved with the owner before installation or capture.
@@ -12,10 +16,11 @@ classification must be resolved with the owner before installation or capture.
 
 | Environment | Evidence / requirement |
 |---|---|
-| Windchill Services13.0.2.11 build32 (13.0.2.0 CPS11), Corretto 17.0.12, Jakarta Servlet, Oracle 19c, Linux x64 | Exact first-binary baseline. See [qualification evidence](LOCAL-INSTALL.md); historical icon acceptance is not new source/binary acceptance. |
+| Windchill Services12.1.2.23 build38 (12.1.2.0 CPS23), Corretto 11.0.19, javax Servlet, Oracle 19c, Windows x64 | Exact first-binary baseline. See [qualification evidence](LOCAL-INSTALL.md); historical icon acceptance is not new source/binary acceptance. |
 | Windchill 13.1.4, Java 21, Oracle 19.3 | Original implementation provenance. This publication revision has not been requalified there. Rebuild with that installation's supported JDK and SDK. |
+| Windchill 13.0.2 on Windows | Not qualified by this release. Use a separate target-build branch and release; verify the target's JDK, Servlet namespace, CCD metadata, XCONF DTD, Oracle profile and runtime behavior. |
 | Other 13.x versions/CPS levels | Conditional candidates, not verified. Rebuild JAR/ClassInfo, compile all JSPs, test profiler integration and run browser acceptance. |
-| Windchill 12.x or any `javax.servlet` container | Incompatible as shipped. The JSP/API/SDK port is more than a documentation or environment-variable change. |
+| Other Windchill 12.x or 13.x/CPS levels | Not qualified by this port. Rebuild JAR/ClassInfo, compile all JSPs, test profiler integration and run browser acceptance. |
 | Traditional on-premises `codebase` directory | Deployment tooling's qualified layout. The owner needs access to PTC Ant, CCD and xconfmanager. |
 | `codebase.war`, immutable containers or Windchill+ | Not qualified by this installer; it refuses `codebase.war`. Use a provider-approved package/CCD process, not filesystem workarounds. |
 
@@ -32,7 +37,7 @@ Other CPS/SDK combinations need rebuild and qualification; a similar version
 label or successful checksum alone is insufficient.
 
 The package contract is `prebuilt/DbCapture.jar`, exactly seven
-`prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files and
+`prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files and
 `prebuilt/manifest.json` recording checksums, source fingerprints and target
 version/SDK fingerprints. It contains no PTC/Oracle libraries or generated PTC
 JavaScript bundles. [Qualified custom schema DDL](sql/oracle/README.md) is included
@@ -40,7 +45,7 @@ separately; it is not portable pre-generated SQL for arbitrary sites. A differen
 schema profile requires target generation and DBA review, even with a prebuilt JAR.
 
 The publication build compiles all current runtime Java with the target SDK
-and `--release 17 -proc:none`, retaining only fingerprint-locked custom generated
+and `--release 11 -proc:none`, retaining only fingerprint-locked custom generated
 entries and ClassInfo from the previous verified target CCD generation.
 `deployment/generated-model-baseline.json` records the source, generated-entry,
 metadata and SDK fingerprints. This is current-source compilation with unchanged
@@ -51,7 +56,7 @@ new baseline; ordinary implementation recompilation cannot qualify stale
 generated metadata. See [the assembly contract](HANDOFF.md#current-source-prebuilt-assembly).
 
 Preserve the existing
-`com.ptc.dbcapture` persistent identities and serialized DTO compatibility;
+`com.custom.dbcapture` persistent identities and serialized DTO compatibility;
 renaming them is a data migration, not a cosmetic packaging change.
 
 ## Database compatibility
@@ -129,7 +134,7 @@ Legacy installations may also contain `DBCAPTURESQLEVENTS`; leave it and its
 data alone. The disabled heuristic correlator is not part of the installation.
 
 The [bundled first-install DDL](sql/oracle/README.md) is restricted to the
-unchanged Windchill 13.0.2.11 generated-model baseline, Oracle 19c,
+unchanged Windchill 12.1.2.23 generated-model baseline, Oracle 19c,
 `wt.db.maxBytesPerChar=3`, explicit `VARCHAR2(n BYTE)`, the approved schema-default
 data tablespace and **INDX** for all primary-key/secondary indexes.
 Run `node tools/schema-package.mjs verify --target` for the prebuilt target's
@@ -148,26 +153,24 @@ including the PK backing indexes). Existing or partially
 created objects require DBA review/migration. Never drop existing capture history
 to make an installation script succeed.
 
-## Linux and Windows
+## Windows filesystem
 
-**Linux x64 is the only shipped binary platform. Windows runtime is blocked as
-shipped, not merely untested.** The private
-evidence store requires POSIX permissions and the `unix:nlink` attribute and has
-no NTFS ACL fallback. This conclusion follows from source and JDK filesystem
-contracts; it is not a Windows execution result or Windows certification.
-Linux also requires a suitable filesystem; do not assume an arbitrary network
-share supplies the necessary privacy and hard-link checks.
+**Windows x64 on a local NTFS volume is the qualified platform for this port.**
+The private evidence store removes inherited write access, restricts writes to
+the Windchill process owner and approved Windows system/administrator identities,
+rejects symbolic links and reparse-point path changes, and checks stable file
+identity around opens. Network shares and non-NTFS filesystems are rejected.
 
 Node.js **22 or newer** is a build/deployment/test prerequisite, not a Windchill
 runtime dependency. No external npm packages are required. Use the PTC-supported
 JDK already selected for the target. The DBA procedure needs the site's approved Oracle client. Git is required for
 index/history publication review, not for running Windchill.
 
-The [evidence store](customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SessionEvidenceStore.java)
+The [evidence store](customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SessionEvidenceStore.java)
 is opened even when tracing is unavailable. A filesystem failure is not safely
 limited to loss of optional SQL evidence. Do not bypass the privacy checks.
-A Windows port would require reviewed filesystem/ACL behavior and native
-end-to-end qualification; portable-looking Node commands do not supply either.
+The NTFS policy and locked-file deletion path have native Java 11 regression
+coverage. This does not qualify another service account, filesystem or cluster.
 
 ## Topology and authorization
 

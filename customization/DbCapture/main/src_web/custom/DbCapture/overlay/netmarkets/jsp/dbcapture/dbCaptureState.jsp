@@ -8,20 +8,24 @@
   datastore connection) exists. Authorization is enforced inside the service,
   not here, so it applies however the request arrived.
 --%><%@ page contentType="application/json; charset=UTF-8" trimDirectiveWhitespaces="true"
-%><%@ page import="com.ptc.dbcapture.DbCaptureHelper"
-%><%@ page import="com.ptc.dbcapture.DbCaptureSession"
-%><%@ page import="com.ptc.dbcapture.engine.TableFilter"
+%><%@ page import="com.custom.dbcapture.DbCaptureHelper"
+%><%@ page import="com.custom.dbcapture.DbCaptureSession"
+%><%@ page import="com.custom.dbcapture.engine.TableFilter"
+%><%@ page import="com.ptc.core.appsec.ApplicationSecurityException"
+%><%@ page import="com.ptc.core.appsec.CSRFProtector"
 %><%@ page import="java.util.ArrayList"
 %><%@ page import="java.util.List"
 %><%
    response.setHeader("Cache-Control", "no-store");
+   response.setHeader("Pragma", "no-cache");
+   response.setHeader("X-Content-Type-Options", "nosniff");
 
-   String op = request.getParameter("op");
+   String op = trimToNull(request.getParameter("op"));
    String message = null;
    boolean ok = true;
    String completedCaptureId = null;
    String resultsUrl = null;
-   com.ptc.dbcapture.engine.MonitoringScope.Selection scopeSelection = null;
+   com.custom.dbcapture.engine.MonitoringScope.Selection scopeSelection = null;
    java.util.Map<String, String> exportNames = null;
 
    // Filled in only by op=tables; see the branch below for why they exist.
@@ -31,6 +35,22 @@
    List<String> unknownTables = null;
 
    try {
+      if (op != null && !op.matches("[A-Za-z]{1,20}")) {
+         response.setStatus(400);
+         throw new IllegalArgumentException("Invalid DB Capture operation.");
+      }
+      if (op != null && !com.custom.dbcapture.DbCaptureAuthorization.isCurrentAdministrator()) {
+         response.setStatus(403);
+         throw new wt.util.WTException("DB Capture operation requires a site administrator.");
+      }
+      if (isMutation(op)) {
+         if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(405);
+            response.setHeader("Allow", "POST");
+            throw new wt.util.WTException("DB Capture changes require POST.");
+         }
+         CSRFProtector.checkNonce(request);
+      }
       if ("start".equals(op)) {
          DbCaptureSession started =
                DbCaptureHelper.service.startCapture(boundedDescription(request.getParameter("label")));
@@ -40,15 +60,15 @@
          DbCaptureSession stopped = DbCaptureHelper.service.stopCapture();
          message = DbCaptureHelper.completionMessage(stopped);
          completedCaptureId = stopped.getCaptureId();
-         resultsUrl = com.ptc.dbcapture.DbCaptureNavigation.resultsUrl(completedCaptureId);
+         resultsUrl = com.custom.dbcapture.DbCaptureNavigation.resultsUrl(completedCaptureId);
       } else if ("scope".equals(op)) {
-         scopeSelection = com.ptc.dbcapture.DbCaptureMonitoringScope.read();
+         scopeSelection = com.custom.dbcapture.DbCaptureMonitoringScope.read();
       } else if ("settings".equals(op)) {
-         scopeSelection = com.ptc.dbcapture.DbCaptureMonitoringScope.update(
-               request.getParameter(com.ptc.dbcapture.DbCaptureSettings.INCLUDED_TABLES));
+         scopeSelection = com.custom.dbcapture.DbCaptureMonitoringScope.update(
+               request.getParameter(com.custom.dbcapture.DbCaptureSettings.INCLUDED_TABLES));
          message = "Monitoring scope saved.";
       } else if ("exportNames".equals(op)) {
-         com.ptc.dbcapture.DbCaptureAuthorization.requireAdministrator();
+         com.custom.dbcapture.DbCaptureAuthorization.requireAdministrator();
          List<String> captureIds = exportCaptureIds(request.getParameter("captureIds"));
          java.util.Map<String, String> names = new java.util.LinkedHashMap<>();
          for (String captureId : captureIds) {
@@ -70,7 +90,7 @@
           * patterns that can drift away from it. A forensic tool must not drop
           * rows without saying which.
           */
-         com.ptc.dbcapture.DbCaptureAuthorization.requireAdministrator();
+         com.custom.dbcapture.DbCaptureAuthorization.requireAdministrator();
          String scope = trimToNull(request.getParameter("captureId"));
          java.util.Set<String> visibleCaptures = DbCaptureHelper.visibleCaptureIds(
                "true".equalsIgnoreCase(request.getParameter("showUnfinished")));
@@ -111,39 +131,53 @@
       } else if (op != null && !op.trim().isEmpty()) {
          throw new wt.util.WTException("Unsupported DB Capture operation: " + op + ".");
       }
+   } catch (ApplicationSecurityException e) {
+      ok = false;
+      response.setStatus(403);
+      message = "The request could not be authorized. Reload DB Ninja and retry.";
+      org.apache.logging.log4j.LogManager
+         .getLogger("com.custom.dbcapture.endpoint")
+         .warn("DB Capture endpoint rejected an invalid CSRF nonce for op=" + op);
    } catch (Exception e) {
       ok = false;
+      if (response.getStatus() == 200) {
+         response.setStatus(e instanceof IllegalArgumentException || e instanceof wt.util.WTException ? 400 : 500);
+      }
       message = e.getMessage();
       // The dialog is transient; make sure the failure is also in the log.
       org.apache.logging.log4j.LogManager
-         .getLogger("com.ptc.dbcapture.endpoint")
+         .getLogger("com.custom.dbcapture.endpoint")
          .error("DB Capture endpoint failed for op=" + op, e);
    }
 
-   com.ptc.dbcapture.DbCaptureBannerState banner = null;
+   com.custom.dbcapture.DbCaptureBannerState banner = null;
    try {
       banner = DbCaptureHelper.service.getBannerState();
    } catch (Exception e) {
       ok = false;
       message = e.getMessage();
-      org.apache.logging.log4j.LogManager.getLogger("com.ptc.dbcapture.endpoint")
+      org.apache.logging.log4j.LogManager.getLogger("com.custom.dbcapture.endpoint")
             .error("Could not read DB Capture banner state.", e);
    }
 
    StringBuilder json = new StringBuilder();
+   boolean administrator = banner != null && banner.administrator();
+   String csrfNonce = administrator ? CSRFProtector.getNonce(request) : null;
+   if (!administrator && !ok) message = "DB Capture state is unavailable.";
    json.append('{');
    json.append("\"ok\":").append(ok);
    json.append(",\"stateKnown\":").append(banner != null);
    json.append(",\"running\":").append(banner != null && banner.running());
-   json.append(",\"captureId\":").append(quote(banner == null ? null : banner.captureId()));
+   json.append(",\"captureId\":").append(quote(administrator ? banner.captureId() : null));
    json.append(",\"label\":null");
-   json.append(",\"startedBy\":").append(quote(banner == null ? null : banner.startedBy()));
-   json.append(",\"startedAtMillis\":").append(banner == null ? 0L : banner.startedAtMillis());
-   json.append(",\"administrator\":").append(banner != null && banner.administrator());
+   json.append(",\"startedBy\":").append(quote(administrator ? banner.startedBy() : null));
+   json.append(",\"startedAtMillis\":").append(administrator ? banner.startedAtMillis() : 0L);
+   json.append(",\"administrator\":").append(administrator);
    json.append(",\"ownedByCurrentUser\":").append(
          banner != null && banner.ownedByCurrentUser());
    json.append(",\"canStart\":").append(banner != null && banner.canStart());
    json.append(",\"canStop\":").append(banner != null && banner.canStop());
+   json.append(",\"csrfNonce\":").append(quote(csrfNonce));
    json.append(",\"message\":").append(quote(message));
    json.append(",\"completedCaptureId\":").append(quote(completedCaptureId));
    json.append(",\"resultsUrl\":").append(quote(resultsUrl));
@@ -170,6 +204,11 @@
    json.append('}');
    out.print(json.toString());
 %><%!
+   private static boolean isMutation(String op) {
+      return "start".equals(op) || "stop".equals(op) || "settings".equals(op)
+            || "describe".equals(op) || "delete".equals(op);
+   }
+
    private static List<String> exportCaptureIds(String raw) {
       if (raw == null || raw.trim().isEmpty()) {
          throw new IllegalArgumentException("captureIds must contain at least one capture ID.");

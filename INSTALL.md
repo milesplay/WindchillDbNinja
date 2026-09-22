@@ -2,7 +2,9 @@
 
 Read [compatibility](COMPATIBILITY.md), [operations](OPERATIONS.md) and
 [PTC customization mapping](CUSTOMIZATION.md) first.
-This procedure is for an authorized **Linux x64, on-premises, traditional-codebase,
+For a new Windows release or a Windows 13.0.2 port, also follow
+[WINDOWS-PORTING.md](WINDOWS-PORTING.md) before selecting a binary.
+This procedure is for an authorized **Windows x64, on-premises, traditional-codebase,
 Oracle-backed Windchill** installation. It is not a Windchill+ deployment recipe.
 
 **Development and test environments only. Do not install or run DB Ninja in
@@ -12,10 +14,10 @@ automatically identify a production system, and an approval flag cannot make
 production deployment acceptable.
 
 Use Node.js 22 or newer and the target's licensed SDK/supported JDK; no npm
-dependencies or downloaded PTC/Oracle libraries are required. **Windows is
-unsupported as shipped:** the evidence store requires POSIX permissions and
-`unix:nlink`, with no NTFS ACL fallback. There is no Windows certification.
-Read [the filesystem requirements](COMPATIBILITY.md#linux-and-windows).
+dependencies or downloaded PTC/Oracle libraries are required. This port requires
+Windows x64 and a local NTFS evidence directory with owner/system-administrator
+ACLs; non-NTFS volumes, network shares and reparse-point paths are rejected.
+Read [the filesystem requirements](COMPATIBILITY.md#windows-filesystem).
 Use the installation owner account, not an arbitrary root or
 administrator account that leaves files owned by the wrong service identity.
 
@@ -51,9 +53,9 @@ the reviewed tag, or download the full source/install ZIP and SHA256SUMS from
 For the 0.1.1 preview, keep the two assets in the same private directory:
 
 ```text
-sha256sum -c SHA256SUMS
-unzip WindchillDbNinja-0.1.1-linux-x64.zip
-cd WindchillDbNinja-0.1.1
+Get-FileHash .\WindchillDbNinja-0.2.0-windows-x64.zip -Algorithm SHA256
+Expand-Archive .\WindchillDbNinja-0.2.0-windows-x64.zip
+cd WindchillDbNinja-0.2.0-wc121-win1
 node tools/schema-package.mjs verify
 ```
 
@@ -80,7 +82,7 @@ node tools/dbninja.mjs preflight
 ```
 
 Paths are placeholders, not target detection rules. Preflight is read-only and
-checks installed PTC tooling, Jakarta Servlet and service slot 905000.
+checks installed PTC tooling, javax Servlet and service slot 905000.
 It does not connect to Oracle or authorize an installation. Have a DBA run
 [oracle-check.sql](sql/oracle-check.sql) as the actual Windchill schema using the
 site's approved interactive authentication mechanism. Do not put passwords in a
@@ -100,9 +102,9 @@ Table creation follows section 5 with its own approval and result checks.
 Also inspect the installed XCONF syntax and mappings before modifying settings:
 
 ```sh
-# Linux; execute from WT_HOME.
-./bin/xconfmanager -h
-./bin/xconfmanager -d 'netmarkets.presentation.jsFiles,netmarkets.presentation.cssFiles,wt.services.service.905000'
+# Windows; execute from WT_HOME.
+.\bin\xconfmanager.bat -h
+.\bin\xconfmanager.bat -d "netmarkets.presentation.jsFiles,netmarkets.presentation.cssFiles,wt.services.service.905000"
 ```
 
 Help exit conventions can differ; any nonzero write/propagation/validation
@@ -146,19 +148,19 @@ selected runtime files are installed, never that folder wholesale.
 
 ### Optional: use the exact-baseline prebuilt package
 
-The first binary targets **Windchill Services13.0.2.11 build32
-(13.0.2.0 CPS11), Corretto 17.0.12, Oracle 19c, Linux x64 and traditional
+The first binary targets **Windchill Services12.1.2.23 build38
+(12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64 and traditional
 `codebase`**. The package contains only:
 
 - `prebuilt/DbCapture.jar`;
-- seven matching `prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files;
+- seven matching `prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files;
 - `prebuilt/manifest.json` with checksums, source fingerprints and target
   version/SDK fingerprints.
 
 The publication candidate is a **current-source compilation with unchanged
 generated model artifacts**, not a new CCD or annotation-processing run.
 `tools/build-prebuilt.mjs` compiles all current runtime Java against the target
-SDK with `--release 17 -proc:none` into private output and assembles a fresh
+SDK with `--release 11 -proc:none` into private output and assembles a fresh
 module-only JAR. It does not overlay stale implementation classes or write live
 metadata. Only 15 fingerprint-locked custom generated JAR entries and the seven
 matching ClassInfo files are retained from the prior verified target CCD
@@ -303,7 +305,7 @@ affected services still stopped, select **one** of these routes.
 
 The [combined first-install script](sql/oracle/create-db-ninja.sql) creates four
 tables, four primary keys and fourteen secondary indexes. It requires Oracle
-19c, the unchanged Windchill 13.0.2.11 generated-model baseline,
+19c, the unchanged Windchill 12.1.2.23 generated-model baseline,
 `wt.db.maxBytesPerChar=3`, explicit `VARCHAR2(n BYTE)`, the schema's approved
 default data tablespace and the INDX index tablespace with sufficient quota.
 For the exact prebuilt target:
@@ -329,13 +331,13 @@ on the target as required and generate its own DDL:
 node tools/dbninja.mjs ddl
 ```
 
-This invokes PTC `tools.xml sql_script` for `com.ptc.dbcapture.*` and only generates
+This invokes PTC `tools.xml sql_script` for `com.custom.dbcapture.*` and only generates
 files. Inspect the reported Oracle output directory and the actual
 `wt.db.maxBytesPerChar`. Then assemble a create-only script; for example:
 
 ```sh
-# Linux; sql3 is an example, not a universal choice.
-node tools/create-schema.mjs "$WT_HOME/db/sql3/com/ptc/dbcapture" build/create-schema.sql
+# Windows; sql3 is an example, not a universal choice.
+node tools/create-schema.mjs "$WT_HOME/db/sql3/com/custom/dbcapture" build/create-schema.sql
 ```
 
 The assembler consumes all eight target-generated table/index scripts, refuses

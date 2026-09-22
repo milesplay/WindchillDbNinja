@@ -30,8 +30,8 @@ function inventory(root) {
 }
 
 test('fresh prebuilt installation plans every runtime resource from the checkout without live writes or old artifacts', {
-  skip: process.platform !== 'linux' || process.arch !== 'x64' || !process.env.JAVA_HOME
-    ? 'Requires the qualified Linux x64 platform and JAVA_HOME for the real JDK XML/property helper.' : false
+  skip: process.platform !== 'win32' || process.arch !== 'x64' || !process.env.JAVA_HOME
+    ? 'Requires the qualified Windows x64 platform and JAVA_HOME for the real JDK XML/property helper.' : false
 }, async t => {
   fs.mkdirSync(path.join(root, 'build'), {recursive: true});
   const directory = fs.mkdtempSync(path.join(root, 'build/first-install-test-'));
@@ -43,16 +43,16 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
   }
   const {metadataNames, sdkFiles} = await import('./prebuilt.mjs');
   for (const relative of [...sdkFiles, 'bin/swmaint.xml', 'bin/jsfrag_combine.xml',
-    'ant/lib/ant-launcher.jar', 'bin/customizationTools/build.xml', 'bin/xconfmanager']) {
+    'ant/lib/ant-launcher.jar', 'bin/customizationTools/build.xml', 'bin/xconfmanager.bat']) {
     put(home, relative, 'Synthetic target fixture; not a vendor file.\n');
   }
   put(home, 'codebase/wt.properties', 'wt.db.maxBytesPerChar=3\n');
   put(home, 'codebase/presentation.properties',
     'netmarkets.presentation.jsFiles=custom/Unrelated/site.js\nnetmarkets.presentation.cssFiles=custom/Unrelated/site.css\n');
   put(home, 'codebase/netmarkets/javascript/util/main.js', '// Synthetic existing Windchill bundle.\n');
-  put(home, 'servlet-fixture/jakarta/servlet/http/HttpServletRequest.class', 'Synthetic ZIP entry; never loaded.\n');
+  put(home, 'servlet-fixture/javax/servlet/http/HttpServletRequest.class', 'Synthetic ZIP entry; never loaded.\n');
   const javaHome = fs.realpathSync(process.env.JAVA_HOME);
-  const jar = spawnSync(path.join(javaHome, 'bin/jar'),
+  const jar = spawnSync(path.join(javaHome, 'bin/jar.exe'),
     ['cf', path.join(home, 'tomcat/lib/servlet-api.jar'), '-C', path.join(home, 'servlet-fixture'), '.'], {encoding: 'utf8'});
   assert.equal(jar.status, 0, jar.stderr);
   const sdk = Object.fromEntries(sdkFiles.map(relative => [relative, sha(fs.readFileSync(path.join(home, relative)))]));
@@ -66,12 +66,11 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
   manifest.build.generatedModelBaselineSha256 = sha(fs.readFileSync(baselineFile));
   fs.writeFileSync(manifestFile, JSON.stringify(manifest));
   // Only the unavailable vendor version probe is simulated; XML/properties use the real JDK.
-  const java = put(directory, 'java-probe', `#!${process.execPath}\n`
-    + 'const {spawnSync} = require("node:child_process");\nconst args = process.argv.slice(2);\n'
-    + 'if (args.includes("wt.util.version.WindchillVersion")) { console.log("wnc.13.0.2.11"); }\n'
-    + `else { const result = spawnSync(${JSON.stringify(path.join(javaHome, 'bin/java'))}, args, {stdio: "inherit"});`
-    + ' if (result.error) throw result.error; process.exitCode = result.status === null ? 1 : result.status; }\n', 0o700);
-  const env = {home, javaHome, java, javac: path.join(javaHome, 'bin/javac')};
+  const java = put(directory, 'java-probe.cmd', '@echo off\r\n'
+    + 'echo %* | %SystemRoot%\\System32\\findstr.exe /c:"wt.util.version.WindchillVersion" >nul\r\n'
+    + 'if not errorlevel 1 (echo 12.1.2.23 12.1 wnc.12.1.2.23 38& exit /b 0)\r\n'
+    + `"${path.join(javaHome, 'bin/java.exe')}" %*\r\nexit /b %ERRORLEVEL%\r\n`, 0o700);
+  const env = {home, javaHome, java, javac: path.join(javaHome, 'bin/javac.exe')};
   const {createPlan, assets, actionIcons, fingerprint} = await import(pathToFileURL(path.join(source, 'tools/dbninja.mjs')).href);
   const before = inventory(home);
   const planFile = createPlan(env, false, false, true);
@@ -88,7 +87,7 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
     'codebase/config/urlValidators/DbCapture-validators.xml',
     'custom/DbCapture/xconf/DbCapture.service.properties.xconf',
     'custom/xconf/DbNinja.xconf', 'custom/lib/DbCapture.jar',
-    ...metadataNames.map(name => `codebase/com/ptc/dbcapture/${name}`),
+    ...metadataNames.map(name => `codebase/com/custom/dbcapture/${name}`),
     `codebase/netmarkets/javascript/util/jsfrags/${assets.jsfrag}`,
     'codebase/customroleaccessprefs.xml'
   ].sort();
@@ -112,7 +111,7 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
   fs.unlinkSync(jsp);
   assert.throws(() => createPlan(env, false, false, true), /Missing source\/build artifact/);
   fs.writeFileSync(jsp, jspBytes);
-  fs.unlinkSync(path.join(source, 'prebuilt/metadata/com/ptc/dbcapture', metadataNames[0]));
+  fs.unlinkSync(path.join(source, 'prebuilt/metadata/com/custom/dbcapture', metadataNames[0]));
   assert.throws(() => createPlan(env, false, false, true), /artifact mismatch/);
   assert.deepEqual(inventory(home), before, 'Even failed plans must leave the fresh target unchanged.');
 });

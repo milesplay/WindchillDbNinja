@@ -5,13 +5,13 @@ import {fileURLToPath} from 'node:url';
 import {confined, fingerprint} from './filesystem.mjs';
 import {createOnlySql, readCreateOnly, tables} from './create-schema.mjs';
 import {generatedSourceFiles, readPrebuilt, verifyPrebuiltTarget} from './prebuilt.mjs';
-import {configuration} from './dbninja.mjs';
+import {configuration, describeProperty} from './dbninja.mjs';
 
 export const schemaInputs = ['Table', 'Index'].flatMap(kind =>
   tables.map(table => `sql/oracle/ddl/create_${table}_${kind}.sql`)).sort();
 export const schemaFiles = ['sql/oracle/README.md', 'sql/oracle/schema-profile.json',
   'sql/oracle/create-db-ninja.sql', ...schemaInputs];
-const targetProfile = {windchill: '13.0.2.11', oracleMajor: 19, maxBytesPerChar: 3,
+const targetProfile = {windchill: '12.1.2.23', oracleMajor: 19, maxBytesPerChar: 3,
   lengthSemantics: 'BYTE', indexTablespace: 'INDX', tableTablespace: 'schema-default'};
 const sameNames = (actual, expected) => Array.isArray(actual)
   && JSON.stringify([...actual].sort()) === JSON.stringify([...expected].sort());
@@ -34,7 +34,7 @@ export function readSchemaPackage(root) {
     throw new Error('Schema resource inventory differs from the reviewed first-install package.');
   }
   const profile = JSON.parse(fs.readFileSync(confined(root, 'sql/oracle/schema-profile.json'), 'utf8'));
-  if (profile.schemaVersion !== 1 || profile.id !== 'windchill-13.0.2.11-oracle19c-sql3'
+  if (profile.schemaVersion !== 1 || profile.id !== 'windchill-12.1.2.23-oracle19c-sql3'
       || !profile.target || !sameNames(Object.keys(profile.target), Object.keys(targetProfile))
       || Object.entries(targetProfile).some(([key, value]) => profile.target[key] !== value)
       || profile.provenance?.method !== 'ptc-generated-custom-model-sql3'
@@ -91,13 +91,9 @@ export function verifySchemaWidth(declaration, propagated) {
 export function verifySchemaTarget(root, env) {
   const schema = readSchemaPackage(root);
   verifyPrebuiltTarget(env, readPrebuilt(root));
-  const wrapper = confined(env.home, 'bin/xconfmanager');
-  const result = spawnSync(wrapper, ['-d', 'wt.db.maxBytesPerChar'], {cwd: env.home, encoding: 'utf8',
-    env: {...process.env, JAVA_HOME: env.javaHome, JAVA_EXEC: env.java}, timeout: 60000, maxBuffer: 8 * 1024 * 1024});
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`Read-only xconfmanager inspection failed (exit ${result.status}, signal ${result.signal || 'none'}).`);
+  const declaration = describeProperty(env, 'wt.db.maxBytesPerChar');
   const propagated = configuration(env, 'properties', confined(env.home, 'codebase/wt.properties'), 'wt.db.maxBytesPerChar');
-  verifySchemaWidth(result.stdout, propagated);
+  verifySchemaWidth(declaration, propagated);
   return schema;
 }
 
@@ -111,8 +107,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (process.argv[3]) {
       if (!process.env.WT_HOME || !process.env.JAVA_HOME) throw new Error('Set WT_HOME and JAVA_HOME explicitly.');
       const home = fs.realpathSync(process.env.WT_HOME), javaHome = fs.realpathSync(process.env.JAVA_HOME);
-      verifySchemaTarget(root, {home, javaHome, java: path.join(javaHome, 'bin/java'), javac: path.join(javaHome, 'bin/javac')});
-      console.log('PASS: matching Linux prebuilt target and declared/propagated wt.db.maxBytesPerChar=3.');
+      const extension = process.platform === 'win32' ? '.exe' : '';
+      verifySchemaTarget(root, {home, javaHome, java: path.join(javaHome, `bin/java${extension}`),
+        javac: path.join(javaHome, `bin/javac${extension}`)});
+      console.log('PASS: matching Windows prebuilt target and declared/propagated wt.db.maxBytesPerChar=3.');
     } else {
       readSchemaPackage(root);
     }

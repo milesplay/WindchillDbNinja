@@ -1,6 +1,6 @@
 # DB Ninja for Windchill
 
-[Repository](https://github.com/milesplay/WindchillDbNinja) | [Releases](https://github.com/milesplay/WindchillDbNinja/releases) | [Use cases](USE-CASES.md) | [Compatibility](COMPATIBILITY.md) | [Installation](INSTALL.md) | [Oracle DDL](sql/oracle/README.md)
+[Repository](https://github.com/milesplay/WindchillDbNinja) | [Releases](https://github.com/milesplay/WindchillDbNinja/releases) | [Use cases](USE-CASES.md) | [Compatibility](COMPATIBILITY.md) | [Installation](INSTALL.md) | [Windows porting](WINDOWS-PORTING.md) | [Oracle DDL](sql/oracle/README.md)
 
 **See the database changes behind a Windchill operation.**
 
@@ -21,21 +21,23 @@ JavaScript bundles, database dumps or private case records are included.
 
 ## Download and schema
 
-The **0.1.1 Linux development/test preview** provides a complete source/install
-ZIP and SHA256SUMS on the [release page](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1).
-Verify the ZIP checksum, extract it to a private directory outside the web root,
-and follow [INSTALL.md](INSTALL.md). A clone of the same tag contains the same
-tracked files; no Maven/npm/container package is needed.
+This release line is the **0.2.0-wc121-win1 Windows 12.1 development/test port** derived from
+the [upstream v0.1.1 source](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1).
+Use this target-qualified checkout and its regenerated manifest; do not reuse the
+upstream Linux JAR/ClassInfo. Keep it in a private directory outside the web root
+and follow [INSTALL.md](INSTALL.md). For a Windows 13.0.2 target, follow
+[WINDOWS-PORTING.md](WINDOWS-PORTING.md) and create a separate release line.
+No Maven/npm/container package is needed.
 
 The DB Capture table DDL is now included:
 [guarded first-install SQL](sql/oracle/create-db-ninja.sql),
 [individual table/index scripts and conditions](sql/oracle/README.md), and
 [schema checksums/profile](sql/oracle/schema-profile.json).
 It creates **4 tables, 4 primary keys and 14 secondary indexes** for the qualified
-Oracle 19c / Windchill 13.0.2.11 / `wt.db.maxBytesPerChar=3` / INDX profile.
+Oracle 19c / Windchill 12.1.2.23 / `wt.db.maxBytesPerChar=3` / INDX profile.
 It is not universal Oracle SQL and must not be run on an existing installation.
-See [the changelog](CHANGELOG.md) for the packaging correction; runtime binary
-bytes are unchanged from 0.1.0.
+See [the changelog](CHANGELOG.md) for the port. Runtime binary and generated
+metadata were rebuilt with the Windchill 12.1.2.23 SDK.
 
 ## Why DB Ninja?
 
@@ -64,12 +66,13 @@ See [worked investigation recipes and additional uses](USE-CASES.md).
 
 ## For an AI bot given only this repository URL
 
-Read [AGENTS.md](AGENTS.md), then [COMPATIBILITY.md](COMPATIBILITY.md) and
-[INSTALL.md](INSTALL.md), including [database setup](DATABASE-SETUP.md) for
+Read [AGENTS.md](AGENTS.md), then [COMPATIBILITY.md](COMPATIBILITY.md),
+[WINDOWS-PORTING.md](WINDOWS-PORTING.md) and [INSTALL.md](INSTALL.md), including [database setup](DATABASE-SETUP.md) for
 approved privilege grants, DDL creation and post-change checks.
 Inspect the target; do not infer its OS, Java version,
 database, credentials or maintenance permission from this repository.
-The first binary is **Linux x64 only**, with a POSIX/unix evidence filesystem.
+The qualified binary is **Windows x64 only**, with a local NTFS evidence directory
+protected by owner/system-administrator ACL checks and link/reparse-point rejection.
 Node.js 22 or newer and the target's licensed PTC SDK/supported JDK are required
 for the deployment and qualification tools. No npm dependencies are needed.
 
@@ -81,7 +84,7 @@ prerequisites. A repository URL does not grant access to a server or database.
 **Publication handoff:** the owner has authorized custom source and custom
 compiled artifacts under [MIT](LICENSE). The release contract is
 `prebuilt/DbCapture.jar`, exactly seven
-`prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files, and
+`prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files, and
 `prebuilt/manifest.json` with checksums, source fingerprints and target version/SDK
 fingerprints. The [qualification summary](LOCAL-INSTALL.md) records successful current-source
 and selected-binary checks. This is not a claim that the new collector fixes
@@ -105,12 +108,13 @@ release evidence. Never omit failing checks or count skips as acceptance.
 
 | Target | Status |
 |---|---|
-| Windchill Services13.0.2.11 build32 (13.0.2.0 CPS11), Corretto 17.0.12, Oracle 19c, Linux x64, traditional `codebase` | Exact first-binary baseline; package and target fingerprints must match |
+| Windchill Services12.1.2.23 build38 (12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64, traditional `codebase` | Exact qualified `v0.2.0-wc121-win1` baseline; package and target fingerprints must match |
+| Windchill 13.0.2 on Windows | Future port target; use a separate branch, target CCD build, manifest, DDL profile and qualification. The 12.1 prebuilt package is not compatible. |
 | Windchill 13.1.4, Java 21, Oracle 19c | Historical source provenance; qualify this revision on the target |
 | Other Windchill 13.x releases / CPS levels | Target rebuild and full qualification required |
-| Windows | **Unsupported as shipped**: POSIX permissions and `unix:nlink` are required; no NTFS ACL fallback or Windows certification |
+| Other Windows/Windchill CPS combinations | Not qualified; rebuild ClassInfo/JAR, compile JSPs and repeat runtime acceptance |
 | SQL Server / PostgreSQL / Azure SQL | **Not compatible**; installation settings cannot replace the Oracle collector |
-| Windchill 12.x / `javax.servlet` | **Not compatible as shipped** |
+| Other Windchill 12.x/13.x servlet baselines | Not portable by configuration alone; source port and target generation required |
 | Windchill+ / managed cloud / `codebase.war` layouts | Not qualified; use the provider-approved deployment process |
 
 See the [complete matrix and Oracle requirements](COMPATIBILITY.md).
@@ -163,7 +167,7 @@ git clone https://github.com/milesplay/WindchillDbNinja.git
 cd WindchillDbNinja
 ```
 
-After setting `WT_HOME` and `JAVA_HOME` to the reviewed Linux target:
+After setting `WT_HOME` and `JAVA_HOME` to the reviewed Windows target:
 
 ```text
 node tools/dbninja.mjs preflight
@@ -196,7 +200,8 @@ after updates. See [CUSTOMIZATION.md](CUSTOMIZATION.md).
 
 | Document | Purpose |
 |---|---|
-| [INSTALL.md](INSTALL.md) | Linux target-build/prebuilt routes, first install versus update, rollback |
+| [INSTALL.md](INSTALL.md) | Windows target-build/prebuilt routes, first install versus update, rollback |
+| [WINDOWS-PORTING.md](WINDOWS-PORTING.md) | Versioned Windows porting, 13.0.2 workflow, failure modes and bot checklist |
 | [DATABASE-SETUP.md](DATABASE-SETUP.md) | AI/DBA workflow for schema grants, quotas, CREATE DDL and verification |
 | [Oracle schema](sql/oracle/README.md) | Bundled table/index DDL, exact profile, integrity and DBA execution checks |
 | [CHANGELOG.md](CHANGELOG.md) | Versioned changes and release/download scope |

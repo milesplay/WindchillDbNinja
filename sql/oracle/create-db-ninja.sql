@@ -61,7 +61,7 @@ CREATE TABLE DbCaptureAttrDelta (
 ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 );
-COMMENT ON TABLE DbCaptureAttrDelta IS 'Table DbCaptureAttrDelta created for com.ptc.dbcapture.DbCaptureAttrDelta';
+COMMENT ON TABLE DbCaptureAttrDelta IS 'Table DbCaptureAttrDelta created for com.custom.dbcapture.DbCaptureAttrDelta';
 
 -- Source: create_DbCaptureChange_Table.sql
 CREATE TABLE DbCaptureChange (
@@ -94,7 +94,7 @@ CREATE TABLE DbCaptureChange (
 ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 );
-COMMENT ON TABLE DbCaptureChange IS 'Table DbCaptureChange created for com.ptc.dbcapture.DbCaptureChange';
+COMMENT ON TABLE DbCaptureChange IS 'Table DbCaptureChange created for com.custom.dbcapture.DbCaptureChange';
 
 -- Source: create_DbCaptureSession_Table.sql
 CREATE TABLE DbCaptureSession (
@@ -126,7 +126,7 @@ CREATE TABLE DbCaptureSession (
 ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 );
-COMMENT ON TABLE DbCaptureSession IS 'Table DbCaptureSession created for com.ptc.dbcapture.DbCaptureSession';
+COMMENT ON TABLE DbCaptureSession IS 'Table DbCaptureSession created for com.custom.dbcapture.DbCaptureSession';
 
 -- Source: create_DbCaptureTableChange_Table.sql
 CREATE TABLE DbCaptureTableChange (
@@ -160,7 +160,7 @@ CREATE TABLE DbCaptureTableChange (
 ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 );
-COMMENT ON TABLE DbCaptureTableChange IS 'Table DbCaptureTableChange created for com.ptc.dbcapture.DbCaptureTableChange';
+COMMENT ON TABLE DbCaptureTableChange IS 'Table DbCaptureTableChange created for com.custom.dbcapture.DbCaptureTableChange';
 
 -- Source: create_DbCaptureAttrDelta_Index.sql
 CREATE INDEX DbCaptureAttrDelta$COMPOSITE0 ON DbCaptureAttrDelta(idA3A3)

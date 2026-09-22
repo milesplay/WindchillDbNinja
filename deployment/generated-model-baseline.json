@@ -1,57 +1,57 @@
 {
   "schemaVersion": 1,
   "target": {
-    "os": "linux",
+    "os": "win32",
     "arch": "x64",
-    "javaMajor": 17,
-    "windchill": "13.0.2.11",
+    "javaMajor": 11,
+    "windchill": "12.1.2.23",
     "oracleMajor": 19,
-    "servlet": "jakarta",
+    "servlet": "javax",
     "layout": "traditional-codebase"
   },
   "sdk": {
-    "codebase/wt/fc/Persistable.class": "a48981441cfbca5586cb4dcba4d0794794287356d3d7b680e8bf4c03653bbdcb",
-    "codebase/wt/util/WTProperties.class": "f18efe9efca2bc5d6720a305ad3a1a3068c1f86063670432f3fabca5136e6629",
-    "codebase/wt/method/MethodContext.class": "6a50e12801787b8f392759b5f7f33977813b8902dcb1d3620ce3584f47b2efbb",
-    "codebase/wt/pom/WTConnection.class": "2a1e5fdd61a5ce7ea17df22e9b85795de603b3c0310c3747aa91f711032f2a7c",
-    "codebase/wt/introspection/ClassInfo.class": "850f9454d7c56f51f6af7a23256fe06fc9cd358cc99816a1cb73da932afbd346",
-    "tomcat/lib/servlet-api.jar": "4cd5c12a64258dabb096c968b6da036a238bc00fe2eff7feca07bf2b8a1f1157",
-    "srclib/log4j-api.jar": "92ec1fd36ab3bc09de6198d2d7c0914685c0f7127ea931acc32fd2ecdd82ea89",
-    "srclib/log4j-core.jar": "7079368005fc34f56248f57f8a8a53361c3a53e9007d556dbc66fc669df081b5",
-    "srclib/tool/Annotations.jar": "ffc079a9efc3b0ded15845948601bef95d10455645dce4d87fc59e599f68b9fc"
+    "codebase/wt/fc/Persistable.class": "8ce67042e83601543deb65e3fd1405f436f8c98b17215deff3678aa03e711ad9",
+    "codebase/wt/util/WTProperties.class": "58fb7cc776b0311bcf985a800f719afdfe48f68d9a06aa17275205f0fb2d068c",
+    "codebase/wt/method/MethodContext.class": "cb093d5c23397f84cc56e915386faf52bc520316f03d14451060a6f67bd7261d",
+    "codebase/wt/pom/WTConnection.class": "baffd21da665cdb09458662eab66da18b07c25514ac1270cd362e17cebeb3f10",
+    "codebase/wt/introspection/ClassInfo.class": "7a5e7c284d6bde92df9d64b8d5a7d1aef3a8e8dc97cd4df95e6e6993a3a2b15d",
+    "tomcat/lib/servlet-api.jar": "f1b670263abcb12feccb562134899002792a38bdf0dfda210a8e1aaada53bba4",
+    "srclib/log4j-api.jar": "820de7bbaf430eaf2e3e5ccb92f23e2085797c5ac4d4f7fc6c8b660fbefa1dbc",
+    "srclib/log4j-core.jar": "406bb3132c47a5d322e5c571feb0787ca84496469f346eb51f1ef2ee45499902",
+    "srclib/tool/Annotations.jar": "105ef0ea7932a268486f2e67c91330da4cab361b1da76a0f636af7dc191a8f60"
   },
   "generatedInputSources": {
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureAttrDelta.java": "4dc23bf72aa49a883d0979ade60a3940fa8cf3317226b5dd59a7cac216bda91a",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureChange.java": "5da6182eeca3aab8d260db1e4b9e46f90a907173526b5b1e85c55df7e0ef6a57",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureSession.java": "ac49698a0e0b86091334f1603f92ef85ba3325a45d1da8ff777401e6f6287eb3",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureTableChange.java": "4528e151041b4b30d21b61192b2482f2e8047ff79c795a579437141ac08f31c6",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/dbcaptureResource.rbInfo": "f80264f258f8ec8a8fb3b707e78d04b5d9886e8a2613d3f086059ab024415a7a"
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureAttrDelta.java": "995c69f5437676b962e6eae1394a44444a65d9e0f73302a4006b7c9ca2d61738",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureChange.java": "8aa65ff420853a7a9d28d1429c60c6b2fca4aa725b612f26d55e35d60fb29df8",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureSession.java": "ace4dd7211d235d9e7928048908fe424602262eb19e8fc843cae305af211f220",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureTableChange.java": "0542289db127d15e52c2dde05ed5132a0e43414a775ced9e2cd53f60d2264461",
+    "customization/DbCapture/main/src/com/custom/dbcapture/dbcaptureResource.rbInfo": "f80264f258f8ec8a8fb3b707e78d04b5d9886e8a2613d3f086059ab024415a7a"
   },
   "generatedJarEntries": {
-    "com/ptc/dbcapture/dbcaptureResource.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
-    "com/ptc/dbcapture/dbcaptureResource_en.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
-    "com/ptc/dbcapture/dbcaptureResource_en_GB.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
-    "com/ptc/dbcapture/dbcaptureResource_en_US.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
-    "META-INF/ptc.listeners.lst": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "com/ptc/dbcapture/DbCaptureChangeDeltaLink.class": "c1cacccff0a3bcd33fdfa38b253dcce9e03984bd6474dceeb1c4c809e7cf36ef",
-    "com/ptc/dbcapture/DbCaptureSessionChangeLink.class": "be10f704c18dda7052050e06d0d5d0cfd45c7e4836888ee439b40c6de50bc000",
-    "com/ptc/dbcapture/DbCaptureSessionTableLink.class": "40fefea784c1fe89e2fed45082781e1196f2cd1d7745bb291d9b32a958a42113",
-    "com/ptc/dbcapture/_DbCaptureAttrDelta.class": "25fae6d411208ce5e334b29dbb1ebfdb70f94f880b7a72a7805862f1497e041d",
-    "com/ptc/dbcapture/_DbCaptureChange.class": "1e8202c9d925329fe851417c4fa12b91363311290992c17398d7dbdf2a2c1507",
-    "com/ptc/dbcapture/_DbCaptureChangeDeltaLink.class": "cfd0a16d880dd9761dc621426539ee67232876588e5d78f8ff714e445cc93a88",
-    "com/ptc/dbcapture/_DbCaptureSession.class": "3b8ebb5120cda2ed4e23d428131c7158ad3849e018297e2336d65cda22c612e7",
-    "com/ptc/dbcapture/_DbCaptureSessionChangeLink.class": "ecd4e13f9e342eaec9bd28bb0b11b1241057d9eb84ffe146819454c354727b2c",
-    "com/ptc/dbcapture/_DbCaptureSessionTableLink.class": "b484b4b6ac75402b231bc12d87a1b35c09c432a913d8581fb34d24f0121a8dd9",
-    "com/ptc/dbcapture/_DbCaptureTableChange.class": "b2767ae39a50cbe185f85737193c35c336150df3384484b8e96e25ac70fa934f"
+    "com/custom/dbcapture/_DbCaptureAttrDelta.class": "ed386ba44ac6161e5c1869038367cfd22556b909a96e1b204f4d07b79f627cf0",
+    "com/custom/dbcapture/_DbCaptureChange.class": "2f682f55b237a821b0dcfc277ed8eaeb649bbeabceae86dd5b17c4b1960b5744",
+    "com/custom/dbcapture/_DbCaptureSession.class": "4ee2e7e1fa0cb67c59f49f3b18dc90dda25c9d2bf6bd995e5f578c91b8f6f2a3",
+    "com/custom/dbcapture/_DbCaptureTableChange.class": "e0a168b2e1d0574eab9924c476bbd74d0da17a1a42d7a224143783032efc5639",
+    "com/custom/dbcapture/_DbCaptureChangeDeltaLink.class": "ee9708fca503194c34b24a7ad6d02277f903cd1f256c0acf8ef7ac487a913118",
+    "com/custom/dbcapture/_DbCaptureSessionChangeLink.class": "ba4bb5a2f0dcc51a1a4543a657840d0ff327035c9730407313680b6e8c93883f",
+    "com/custom/dbcapture/_DbCaptureSessionTableLink.class": "1f5238982c7976a9e8a6c541e3fd6b65934d6d6d9b2101a1a91990917160c9d8",
+    "com/custom/dbcapture/DbCaptureChangeDeltaLink.class": "875ad71c13bca5182d868f1be4c50805b512fa942a187a7a84e24fe1b45f2b51",
+    "com/custom/dbcapture/DbCaptureSessionChangeLink.class": "316e118d1aac24e7ee342f9d2e12714167ed43597217cb07b0419607f6081239",
+    "com/custom/dbcapture/DbCaptureSessionTableLink.class": "4c115443c1629e94c669eefd06733f2b1dfd4112caef959c2602cdfff947ddbc",
+    "com/custom/dbcapture/dbcaptureResource.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
+    "com/custom/dbcapture/dbcaptureResource_en.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
+    "com/custom/dbcapture/dbcaptureResource_en_GB.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
+    "com/custom/dbcapture/dbcaptureResource_en_US.RB.ser": "2cc84c4aa71f9be0d82deae1b0862b4560eb1abee6b2145dec67ce81c0347066",
+    "META-INF/ptc.listeners.lst": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "metadata": {
-    "DbCaptureAttrDelta.ClassInfo.ser": "a28c1b044517a3ac69de241a74112df90ff6207f9f6a918e94a4e0adb733ec03",
-    "DbCaptureChange.ClassInfo.ser": "e1abc83547b70869d395181a3656b86f0ebdbcdfe20b69ed16d3df9b49019cdd",
-    "DbCaptureSession.ClassInfo.ser": "d4305d5d1dad0e889377998a3bd110864f273de1333291575f7cea4cbaf8a52b",
-    "DbCaptureTableChange.ClassInfo.ser": "441012301e9977c3a543a4ccb1f4523643998a46e7f2fbc0a1cef55326af5508",
-    "DbCaptureChangeDeltaLink.ClassInfo.ser": "21c29c26caa92b4c427021c31a8dae2b2d80b721597412244abab488ae099886",
-    "DbCaptureSessionChangeLink.ClassInfo.ser": "2555b5a11b2ab06d7de90e243aa074effcca4a56dc271b3a26c18903f5928471",
-    "DbCaptureSessionTableLink.ClassInfo.ser": "4bc4fcbe2b0a38ee0ab6fdd52260e96e53e99fb975bba681e25d0368c1e83e7f"
+    "DbCaptureAttrDelta.ClassInfo.ser": "374d69dc4c802a62ebb0f5c8dff015f13d1e63ca6e1d6d49b6c33e7d1212847b",
+    "DbCaptureChange.ClassInfo.ser": "d298a1ba41dabe3c7260369094e10a788ea463ad2f95a5bf841836f29ae23b61",
+    "DbCaptureSession.ClassInfo.ser": "5b14c719d8b9c2e28b7bac7dbd94d4a13bdc75bcd0dd814b924c8ac4fc68bf4a",
+    "DbCaptureTableChange.ClassInfo.ser": "74b1ad2b173246e86753ed77363f330bcde11ece40818ec4134f62eaa7ab2f61",
+    "DbCaptureChangeDeltaLink.ClassInfo.ser": "2faf4aee922e7d88437331e5bcfa9d243d8d951953044bb26b2744d5789b6b92",
+    "DbCaptureSessionChangeLink.ClassInfo.ser": "65c111d911ec7420696c978067b7a495dd0f3f336630ce3c03eb1bebf764c244",
+    "DbCaptureSessionTableLink.ClassInfo.ser": "89185d82ba83d5152489f79c54fb0b876fa7a2e5ba2bfa0287c58fca0e159836"
   },
-  "provenance": "Target-generated custom model bases, association classes and resource bundles from the previously verified CCD build. Persistent model and resource inputs are unchanged. No PTC SDK libraries are included."
+  "provenance": "Target-generated custom model bases, association classes and resource bundles from Windchill 12.1.2.23 CCD on Windows x64 with Java 11. No PTC SDK libraries are included."
 }

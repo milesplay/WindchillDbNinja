@@ -2,14 +2,16 @@
 <!DOCTYPE Configuration SYSTEM "xconf.dtd">
 <Configuration xmlns:xlink="http://www.w3.org/1999/xlink">
    <ConfigurationRef xlink:href="../DbCapture/xconf/DbCapture.service.properties.xconf"/>
+   <AddToProperty name="wt.java.classpath"
+                  value="$(wt.home)$(dir.sep)custom$(dir.sep)lib$(dir.sep)*"/>
    <Property name="wt.services.service.905000"
-             default="com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService"
+             default="com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService"
              targetFile="codebase/wt.properties"/>
    <AddToProperty name="com.ptc.netmarkets.util.misc.customActions"
                   value="config/actions/DbCapture-actions.xml"/>
    <AddToProperty name="com.ptc.netmarkets.util.misc.customActionModels"
                   value="config/actions/DbCapture-actionModels.xml"/>
-   <Property name="com.ptc.dbcapture.excludeTables" default="" targetFile="codebase/wt.properties"/>
-   <Property name="com.ptc.dbcapture.maxRowsPerTable" default="5000" targetFile="codebase/wt.properties"/>
-   <Property name="com.ptc.dbcapture.correlateLogs" default="false" targetFile="codebase/wt.properties"/>
+   <Property name="com.custom.dbcapture.excludeTables" default="" targetFile="codebase/wt.properties"/>
+   <Property name="com.custom.dbcapture.maxRowsPerTable" default="5000" targetFile="codebase/wt.properties"/>
+   <Property name="com.custom.dbcapture.correlateLogs" default="false" targetFile="codebase/wt.properties"/>
 </Configuration>

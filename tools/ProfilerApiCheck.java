@@ -1,4 +1,4 @@
-package com.ptc.dbcapture.diagnostics;
+package com.custom.dbcapture.diagnostics;
 
 /**
  * Read-only linkage check of installed API signatures. Class initialization and all

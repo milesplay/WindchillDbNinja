@@ -1,19 +1,29 @@
-package com.ptc.dbcapture.diagnostics;
+package com.custom.dbcapture.diagnostics;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryFlag;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -34,10 +44,18 @@ import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.filter.AbstractFilter;
+import org.apache.logging.log4j.core.filter.MarkerFilter;
 
 /** Standalone fixtures only: no Windchill API invocation, business connection, or live logger context. */
 @SuppressWarnings("try")
 public final class ProfilerDiagnosticsTest {
+   private static final boolean WINDOWS = System.getProperty("os.name", "")
+      .toLowerCase(java.util.Locale.ROOT).contains("windows");
+   private static final Set<AclEntryPermission> WRITE_PERMISSIONS = EnumSet.of(
+      AclEntryPermission.WRITE_DATA, AclEntryPermission.APPEND_DATA,
+      AclEntryPermission.WRITE_NAMED_ATTRS, AclEntryPermission.WRITE_ATTRIBUTES,
+      AclEntryPermission.DELETE, AclEntryPermission.DELETE_CHILD,
+      AclEntryPermission.WRITE_ACL, AclEntryPermission.WRITE_OWNER);
    private static int checks;
    private static int nextOid = 810000;
    private static Path base;
@@ -50,17 +68,19 @@ public final class ProfilerDiagnosticsTest {
          return;
       }
       base = Path.of(args[0]);
-      Files.createDirectories(base, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+      Files.createDirectories(base);
       classify();
       nativeBatchDml();
       expandedFrozenScope();
       frozenNotRecordedScope();
       filterAndLifetime();
       baselineAndUnavailable();
+      qualifiedWindchillFilter();
       multipleContextsRejectTheWholeRequest();
       timeoutAndReconfiguration();
       bounds();
       concurrency();
+      checkpointReadConcurrency();
       blockedFinalizationDoesNotHoldRequests();
       storeSafety();
       persistenceFailure();
@@ -140,7 +160,7 @@ public final class ProfilerDiagnosticsTest {
          check(snapshot.getTables().isEmpty() && snapshot.getEvents().isEmpty(),
                "an empty monitored scope has neither eligible tables nor invented SQL");
          check(snapshot.isNotRecordedScopeAvailable()
-               && snapshot.getNotRecordedTables().equals(catalog.stream().sorted().toList()),
+               && snapshot.getNotRecordedTables().equals(catalog.stream().sorted().collect(Collectors.toList())),
                "all catalog tables remain historically not recorded when every table is excluded");
          check(fixture.configuration.getFilter() == null, "empty scope does not modify the logger context");
       }
@@ -342,7 +362,7 @@ public final class ProfilerDiagnosticsTest {
          ownQuery.query = "oid=OR%3Acom.ptc.%2564bcapture.DbCaptureSession%3A1";
          inRequest(ownQuery, () -> check(!fixture.sql.isInfoEnabled(), "Encoded own popup query excluded"));
          TestRequest ownClass = new TestRequest("own-class");
-         ownClass.target = "com.ptc.dbcapture.StandardDbCaptureService";
+         ownClass.target = "com.custom.dbcapture.StandardDbCaptureService";
          inRequest(ownClass, () -> check(!fixture.sql.isInfoEnabled(), "Own target class excluded"));
          TestRequest unauthenticated = new TestRequest("no-auth");
          unauthenticated.authenticated = false;
@@ -451,6 +471,19 @@ public final class ProfilerDiagnosticsTest {
       }
    }
 
+   private static void qualifiedWindchillFilter() throws Exception {
+      try (Fixture fixture = new Fixture("windchill-reflection-filter", Level.ERROR)) {
+         Filter baseline = MarkerFilter.createFilter("ReflectionFilter", Filter.Result.ACCEPT,
+               Filter.Result.NEUTRAL);
+         fixture.configuration.addFilter(baseline);
+         SqlEvidenceCapture window = fixture.open(SqlEvidence.Limits.defaults());
+         check(window.isActive(), "Windchill ReflectionFilter can coexist with scoped SQL evidence");
+         window.stop();
+         check(fixture.configuration.getFilter() == baseline,
+               "Windchill ReflectionFilter identity survives exact DB Ninja cleanup");
+      }
+   }
+
    private static void multipleContextsRejectTheWholeRequest() throws Exception {
       try (Fixture fixture = new Fixture("multiple-contexts", Level.ERROR)) {
          SqlEvidenceCapture window = fixture.open(SqlEvidence.Limits.defaults());
@@ -492,6 +525,7 @@ public final class ProfilerDiagnosticsTest {
          Filter other = new AbstractFilter() { };
          fixture.configuration.addFilter(other);
          await(() -> !window.isActive(), "Concurrent filter customization cancels capture");
+         await(window::isClosed, "Concurrent filter customization cleanup completes");
          check(fixture.configuration.getFilter() == other, "Concurrent customization survives cleanup");
       }
    }
@@ -580,6 +614,44 @@ public final class ProfilerDiagnosticsTest {
       }
    }
 
+   private static void checkpointReadConcurrency() throws Exception {
+      List<String> catalog = new ArrayList<String>(TABLES);
+      for (int i = 0; i < 2000; i++) {
+         catalog.add("CHECKPOINT_CONCURRENCY_TABLE_WITH_A_LONG_NAME_" + i);
+      }
+      try (Fixture fixture = new Fixture("checkpoint-read-concurrency", Level.ERROR)) {
+         SqlEvidenceCapture window = SqlEvidenceCapture.open(fixture.context, ProfilerDiagnosticsTest::probe,
+               fixture.store, oid(), TABLES, catalog, SqlEvidence.Limits.defaults());
+         AtomicReference<Throwable> readerFailure = new AtomicReference<Throwable>();
+         ExecutorService reader = Executors.newSingleThreadExecutor();
+         Future<?> readerTask = reader.submit(() -> {
+            while (!window.isClosed()) {
+               try {
+                  fixture.store.read(window.getSessionOid());
+               } catch (Throwable failure) {
+                  readerFailure.compareAndSet(null, failure);
+                  return null;
+               }
+            }
+            return null;
+         });
+         try {
+            Thread.sleep(800);
+            window.stop();
+            readerTask.get(5, TimeUnit.SECONDS);
+            check(readerFailure.get() == null,
+                  "Concurrent reads survive repeated large metadata checkpoints");
+            check(window.snapshot().getState() == SqlEvidence.State.COMPLETE,
+                  "Repeated large metadata checkpoints finish normally");
+         } finally {
+            readerTask.cancel(true);
+            reader.shutdownNow();
+            check(reader.awaitTermination(5, TimeUnit.SECONDS),
+                  "Concurrent evidence reader terminates");
+         }
+      }
+   }
+
    private static void storeSafety() throws Exception {
       try (Fixture fixture = new Fixture("store", Level.ERROR)) {
          expect(IllegalArgumentException.class, () -> fixture.store.read("CAP-000001"));
@@ -595,8 +667,7 @@ public final class ProfilerDiagnosticsTest {
                fixture.store, id, TABLES, SqlEvidence.Limits.defaults()));
          try (Stream<Path> all = Files.walk(fixture.root)) {
             for (Path path : all.collect(Collectors.toList())) {
-               check(Files.getPosixFilePermissions(path).equals(PosixFilePermissions.fromString(
-                     Files.isDirectory(path) ? "rwx------" : "rw-------")), "All evidence files are private");
+               checkPrivate(path);
             }
 
          }
@@ -608,12 +679,12 @@ public final class ProfilerDiagnosticsTest {
                "A new session using a recycled display capture ID cannot inherit old OID evidence");
       }
       Path links = base.resolve("links");
-      Files.createDirectory(links, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+      createPrivateDirectory(links);
       Files.createSymbolicLink(links.resolve("alias"), links.toAbsolutePath());
       expect(IOException.class, () -> new SessionEvidenceStore(links.resolve("alias")));
       Path unsafe = links.resolve("unsafe");
-      Files.createDirectory(unsafe);
-      Files.setPosixFilePermissions(unsafe, PosixFilePermissions.fromString("rwxr-xr-x"));
+      createPrivateDirectory(unsafe);
+      makeUnsafe(unsafe);
       expect(IOException.class, () -> new SessionEvidenceStore(unsafe));
       expect(IOException.class, () -> new SessionEvidenceStore(base.resolve("codebase/evidence")));
 
@@ -632,9 +703,9 @@ public final class ProfilerDiagnosticsTest {
          }
          expect(IOException.class, window::snapshot);
          Files.write(events, original, StandardOpenOption.TRUNCATE_EXISTING);
-         Files.setPosixFilePermissions(events, PosixFilePermissions.fromString("rw-r--r--"));
+         makeUnsafe(events);
          expect(IOException.class, window::snapshot);
-         Files.setPosixFilePermissions(events, PosixFilePermissions.fromString("rw-------"));
+         makePrivate(events, false);
          Path data = directory.resolve("metadata.properties");
          byte[] metadata = Files.readAllBytes(data);
          Files.writeString(data, "x".repeat(40_000), StandardOpenOption.TRUNCATE_EXISTING);
@@ -645,7 +716,7 @@ public final class ProfilerDiagnosticsTest {
          expect(IOException.class, window::snapshot);
          Files.delete(events);
          Files.write(events, original, StandardOpenOption.CREATE_NEW);
-         Files.setPosixFilePermissions(events, PosixFilePermissions.fromString("rw-------"));
+         makePrivate(events, false);
       }
    }
 
@@ -702,11 +773,11 @@ public final class ProfilerDiagnosticsTest {
       try (Fixture fixture = new Fixture("disk-error", Level.ERROR)) {
          SqlEvidenceCapture window = fixture.open(SqlEvidence.Limits.defaults());
          Path directory = sessionDirectory(fixture.root);
-         Files.setPosixFilePermissions(directory, PosixFilePermissions.fromString("r-x------"));
+            makeReadOnly(directory);
          await(window::isClosed, "Persistence failure disables observation and releases its writer");
          check(window.getState() == SqlEvidence.State.ERROR && fixture.configuration.getFilter() == null,
                "Persistence failure restores logging before surfacing the error");
-         Files.setPosixFilePermissions(directory, PosixFilePermissions.fromString("rwx------"));
+            makePrivate(directory, true);
          expect(IOException.class, window::stop);
          check(window.snapshot().getState() == SqlEvidence.State.INTERRUPTED,
                "Last checkpoint honestly marked interrupted when final status cannot be persisted");
@@ -732,7 +803,8 @@ public final class ProfilerDiagnosticsTest {
 
    private static void processLifetime(String mode) throws Exception {
       Path root = base.resolve(mode.substring(2));
-      Process process = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+      String executable = WINDOWS ? "java.exe" : "java";
+      Process process = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", executable).toString(),
             "-XX:-UsePerfData", "-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"),
             "-cp", System.getProperty("java.class.path"), ProfilerDiagnosticsTest.class.getName(), mode,
             root.toString()).inheritIO().start();
@@ -742,7 +814,7 @@ public final class ProfilerDiagnosticsTest {
          throw new AssertionError("Fixture child did not terminate");
       }
       check(process.exitValue() == 0, "Fixture child exit successful");
-      SqlEvidence.Snapshot result = new SessionEvidenceStore(root).read("com.ptc.dbcapture.DbCaptureSession:999999");
+      SqlEvidence.Snapshot result = new SessionEvidenceStore(root).read("com.custom.dbcapture.DbCaptureSession:999999");
       check(result.getState() == SqlEvidence.State.INTERRUPTED && result.getEvents().size() == 1,
             "Shutdown/crash retains only durable completed-request evidence with explicit interrupted state: "
                   + mode + " " + result.getState() + " events=" + result.getEvents().size());
@@ -751,7 +823,7 @@ public final class ProfilerDiagnosticsTest {
    private static void child(String mode, Path root) throws Exception {
       Fixture fixture = new Fixture(root, Level.ERROR);
       SqlEvidenceCapture window = SqlEvidenceCapture.open(fixture.context, ProfilerDiagnosticsTest::probe,
-            fixture.store, "com.ptc.dbcapture.DbCaptureSession:999999", TABLES, SqlEvidence.Limits.defaults());
+            fixture.store, "com.custom.dbcapture.DbCaptureSession:999999", TABLES, SqlEvidence.Limits.defaults());
       TestRequest request = new TestRequest("child-request");
       request.outcome.set(SqlEvidenceCapture.Outcome.SUCCEEDED);
       inRequest(request, () -> nativeInsert(fixture.sql, "Insert Statement=INSERT INTO WTPART VALUES (?)"));
@@ -797,8 +869,111 @@ public final class ProfilerDiagnosticsTest {
       }
    }
 
+      private static void createPrivateDirectory(Path path) throws IOException {
+      Files.createDirectory(path);
+      makePrivate(path, true);
+      }
+
+      private static void makePrivate(Path path, boolean directory) throws IOException {
+      if (!WINDOWS) {
+         Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(
+            directory ? "rwx------" : "rw-------"));
+         return;
+      }
+      AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class,
+         LinkOption.NOFOLLOW_LINKS);
+      if (view == null) throw new IOException("ACL view unavailable for NTFS fixture");
+      UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
+      AclEntry.Builder builder = AclEntry.newBuilder().setType(AclEntryType.ALLOW)
+         .setPrincipal(owner).setPermissions(EnumSet.allOf(AclEntryPermission.class));
+      if (directory) builder.setFlags(AclEntryFlag.FILE_INHERIT, AclEntryFlag.DIRECTORY_INHERIT);
+      view.setAcl(List.of(builder.build()));
+      }
+
+      private static void makeUnsafe(Path path) throws IOException {
+      if (!WINDOWS) {
+         Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(
+            Files.isDirectory(path) ? "rwxr-xr-x" : "rw-r--r--"));
+         return;
+      }
+      AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class,
+         LinkOption.NOFOLLOW_LINKS);
+      List<AclEntry> acl = new ArrayList<AclEntry>(view.getAcl());
+      UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
+      UserPrincipal unrelated = unrelatedPrincipal(path, owner);
+      acl.add(AclEntry.newBuilder().setType(AclEntryType.ALLOW).setPrincipal(unrelated)
+         .setPermissions(WRITE_PERMISSIONS).build());
+      view.setAcl(acl);
+      }
+
+      private static UserPrincipal unrelatedPrincipal(Path path, UserPrincipal owner) throws IOException {
+      for (Path current = path.getParent(); current != null; current = current.getParent()) {
+         AclFileAttributeView parentView = Files.getFileAttributeView(current, AclFileAttributeView.class,
+            LinkOption.NOFOLLOW_LINKS);
+         if (parentView == null) continue;
+         for (AclEntry entry : parentView.getAcl()) {
+            String name = entry.principal().getName().toUpperCase(java.util.Locale.ROOT);
+            if (entry.type() == AclEntryType.ALLOW && !entry.principal().equals(owner)
+                  && !name.contains("SYSTEM") && !name.contains("ADMINISTRATORS")) {
+               return entry.principal();
+            }
+         }
+      }
+      for (String name : List.of("Everyone", "BUILTIN\\Users", "Users", "Guest")) {
+         try {
+            UserPrincipal principal = path.getFileSystem().getUserPrincipalLookupService()
+               .lookupPrincipalByName(name);
+            if (!principal.equals(owner)) return principal;
+         } catch (java.nio.file.attribute.UserPrincipalNotFoundException ignored) {
+            // Try the next provider-specific spelling.
+         }
+      }
+      throw new IOException("No non-owner Windows principal is available for the ACL rejection fixture");
+      }
+
+      private static void makeReadOnly(Path path) throws IOException {
+      if (!WINDOWS) {
+         Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("r-x------"));
+         return;
+      }
+      AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class,
+         LinkOption.NOFOLLOW_LINKS);
+      UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
+      Set<AclEntryPermission> permissions = EnumSet.of(AclEntryPermission.READ_DATA,
+         AclEntryPermission.READ_NAMED_ATTRS, AclEntryPermission.EXECUTE,
+         AclEntryPermission.READ_ATTRIBUTES, AclEntryPermission.READ_ACL, AclEntryPermission.SYNCHRONIZE);
+      view.setAcl(List.of(AclEntry.newBuilder().setType(AclEntryType.ALLOW).setPrincipal(owner)
+         .setPermissions(permissions).setFlags(AclEntryFlag.FILE_INHERIT,
+            AclEntryFlag.DIRECTORY_INHERIT).build()));
+      }
+
+      private static void checkPrivate(Path path) throws IOException {
+      if (!WINDOWS) {
+         check(Files.getPosixFilePermissions(path).equals(PosixFilePermissions.fromString(
+            Files.isDirectory(path) ? "rwx------" : "rw-------")), "All evidence files are private");
+         return;
+      }
+      AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class,
+         LinkOption.NOFOLLOW_LINKS);
+      UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
+      Set<UserPrincipal> allowed = new HashSet<UserPrincipal>();
+      allowed.add(owner);
+      for (String sid : List.of("S-1-5-18", "S-1-5-32-544")) {
+         try {
+         allowed.add(path.getFileSystem().getUserPrincipalLookupService().lookupPrincipalByName(sid));
+         } catch (java.nio.file.attribute.UserPrincipalNotFoundException ignored) {
+         // The runtime uses the same fail-closed principal resolution policy.
+         }
+      }
+      for (AclEntry entry : view.getAcl()) {
+         check(entry.type() != AclEntryType.ALLOW
+            || Collections.disjoint(entry.permissions(), WRITE_PERMISSIONS)
+            || allowed.contains(entry.principal()), "All evidence files have restricted NTFS write ACLs");
+      }
+      }
+
    private static String oid() {
-      return "com.ptc.dbcapture.DbCaptureSession:" + (++nextOid);
+      return "com.custom.dbcapture.DbCaptureSession:" + (++nextOid);
    }
 
    private static void await(Check condition, String label) throws Exception {

@@ -14,17 +14,17 @@ export const sdkFiles = ['codebase/wt/fc/Persistable.class', 'codebase/wt/util/W
   'codebase/wt/introspection/ClassInfo.class', 'tomcat/lib/servlet-api.jar',
   'srclib/log4j-api.jar', 'srclib/log4j-core.jar', 'srclib/tool/Annotations.jar'];
 export const prebuiltFiles = ['prebuilt/DbCapture.jar',
-  ...metadataNames.map(name => `prebuilt/metadata/com/ptc/dbcapture/${name}`)];
+  ...metadataNames.map(name => `prebuilt/metadata/com/custom/dbcapture/${name}`)];
 export const generatedEntries = [
-  ...metadataNames.map(name => `com/ptc/dbcapture/_${name.replace('.ClassInfo.ser', '')}.class`),
+  ...metadataNames.map(name => `com/custom/dbcapture/_${name.replace('.ClassInfo.ser', '')}.class`),
   ...['DbCaptureChangeDeltaLink', 'DbCaptureSessionChangeLink', 'DbCaptureSessionTableLink']
-    .map(name => `com/ptc/dbcapture/${name}.class`),
-  ...['', '_en', '_en_GB', '_en_US'].map(locale => `com/ptc/dbcapture/dbcaptureResource${locale}.RB.ser`),
+    .map(name => `com/custom/dbcapture/${name}.class`),
+  ...['', '_en', '_en_GB', '_en_US'].map(locale => `com/custom/dbcapture/dbcaptureResource${locale}.RB.ser`),
   'META-INF/ptc.listeners.lst'
 ];
 export const generatedSourceFiles = ['DbCaptureAttrDelta.java', 'DbCaptureChange.java',
   'DbCaptureSession.java', 'DbCaptureTableChange.java', 'dbcaptureResource.rbInfo']
-  .map(name => `customization/DbCapture/main/src/com/ptc/dbcapture/${name}`);
+  .map(name => `customization/DbCapture/main/src/com/custom/dbcapture/${name}`);
 const digestPattern = /^[a-f0-9]{64}$/;
 
 export function runtimeSources(root) {
@@ -55,11 +55,11 @@ export function readPrebuilt(root) {
   const target = manifest.target;
   if (manifest.schemaVersion !== 1 || manifest.package !== 'windchill-db-ninja'
       || typeof manifest.version !== 'string' || !/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(manifest.version)
-      || !target || target.os !== 'linux' || target.arch !== 'x64' || target.javaMajor !== 17
-      || target.oracleMajor !== 19 || target.servlet !== 'jakarta'
+      || !target || target.os !== 'win32' || target.arch !== 'x64' || target.javaMajor !== 11
+      || target.oracleMajor !== 19 || target.servlet !== 'javax'
       || target.layout !== 'traditional-codebase' || !/^\d+\.\d+\.\d+\.\d+$/.test(target.windchill || '')
       || !manifest.artifacts || !manifest.sources || !manifest.sdk
-      || !manifest.build || manifest.build.javaRelease !== 17
+      || !manifest.build || manifest.build.javaRelease !== 11
       || manifest.build.method !== 'target-sdk-javac-with-matching-generated-models'
       || manifest.build.annotationProcessing !== false
       || manifest.build.generatedModelBaselineSha256 !== fingerprint(confined(root, 'deployment/generated-model-baseline.json'))) {
@@ -117,11 +117,18 @@ export function readPrebuilt(root) {
     }
   }
   return {manifest, manifestFile, jar: confined(root, 'prebuilt/DbCapture.jar'),
-    metadata: Object.fromEntries(metadataNames.map(name => [name, confined(root, `prebuilt/metadata/com/ptc/dbcapture/${name}`)]))};
+    metadata: Object.fromEntries(metadataNames.map(name => [name, confined(root, `prebuilt/metadata/com/custom/dbcapture/${name}`)]))};
 }
 
 function execute(command, args, cwd) {
-  const result = spawnSync(command, args, {cwd, encoding: 'utf8', timeout: 60000, maxBuffer: 8 * 1024 * 1024});
+  let executable = command, parameters = args, windowsVerbatimArguments = false;
+  if (process.platform === 'win32' && /\.(?:bat|cmd)$/i.test(command)) {
+    executable = process.env.ComSpec || 'cmd.exe';
+    parameters = ['/d', '/s', '/c', `"${[command, ...args].map(value => `"${value}"`).join(' ')}"`];
+    windowsVerbatimArguments = true;
+  }
+  const result = spawnSync(executable, parameters, {cwd, encoding: 'utf8', timeout: 60000,
+    maxBuffer: 8 * 1024 * 1024, ...(windowsVerbatimArguments ? {windowsVerbatimArguments: true} : {})});
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Target version probe failed: ${path.basename(command)} exit ${result.status}.`);
   return `${result.stdout || ''}\n${result.stderr || ''}`;
@@ -130,7 +137,7 @@ function execute(command, args, cwd) {
 export function verifyPrebuiltTarget(env, candidate) {
   const {manifest} = candidate;
   if (process.platform !== manifest.target.os || process.arch !== manifest.target.arch) {
-    throw new Error('This prebuilt package is restricted to Linux x64; do not deploy it on another platform.');
+    throw new Error('This candidate is restricted to the qualified Windows x64 target.');
   }
   const version = execute(env.java, ['-version'], env.home);
   const major = version.match(/(?:openjdk|java) version "(\d+)[."]/);
@@ -161,7 +168,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const home = fs.realpathSync(process.env.WT_HOME), javaHome = fs.realpathSync(process.env.JAVA_HOME);
     const candidate = verifyPrebuiltTarget({home, java: path.join(javaHome, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')},
       readPrebuilt(root));
-    console.log(`PASS: module-only prebuilt ${candidate.manifest.version}; Linux x64, Windchill ${candidate.manifest.target.windchill}, Java 17.`);
+    console.log(`PASS: module-only prebuilt ${candidate.manifest.version}; Windows x64, Windchill ${candidate.manifest.target.windchill}, Java 11.`);
     console.log('Oracle privileges/schema/undo, non-production classification and maintenance approval still require target review.');
   } catch (error) {
     console.error(`ERROR: ${error.message}`);

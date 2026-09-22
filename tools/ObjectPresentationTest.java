@@ -1,4 +1,4 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;

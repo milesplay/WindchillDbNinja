@@ -32,7 +32,7 @@ test('the two action icons have explicit Unicode identities, custom paths and re
 test('only Start and Stop action-resource icon entries change, not labels or action identity', async () => {
   const {actionIconDefinitions} = await api;
   const source = fs.readFileSync(path.join(root,
-    'customization/DbCapture/main/src/com/ptc/dbcapture/dbCaptureActionResource.java'), 'utf8');
+    'customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java'), 'utf8');
   for (const icon of actionIconDefinitions(assets)) {
     const symbol = icon.action === 'startDbCapture' ? 'START_ICON' : 'STOP_ICON';
     assert.ok(source.includes(`@RBEntry("${icon.resource}")\n   public static final String ${symbol} = "dbcapture.${icon.action}.icon";`));
@@ -46,9 +46,9 @@ test('only Start and Stop action-resource icon entries change, not labels or act
 test('custom artwork is bound only to the dbcapture action namespace, never OOTB actions', async () => {
   const {actionIconDefinitions} = await api;
   const resource = fs.readFileSync(path.join(root,
-    'customization/DbCapture/main/src/com/ptc/dbcapture/dbCaptureActionResource.java'), 'utf8');
+    'customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java'), 'utf8');
   const entries = [...resource.matchAll(/@RBEntry\("((?:\\.|[^"\\])*)"\)\s*public static final String \w+\s*=\s*"([^"]+)"/g)];
-  assert.match(resource, /@RBUUID\("com\.ptc\.dbcapture\.dbCaptureActionResource"\)/);
+  assert.match(resource, /@RBUUID\("com\.custom\.dbcapture\.dbCaptureActionResource"\)/);
   for (const icon of actionIconDefinitions(assets)) {
     assert.deepEqual(entries.filter(entry => entry[1] === icon.resource).map(entry => entry[2]),
       [`dbcapture.${icon.action}.icon`]);
@@ -57,7 +57,7 @@ test('custom artwork is bound only to the dbcapture action namespace, never OOTB
   const actions = fs.readFileSync(path.join(root,
     'customization/DbCapture/main/src_web/config/actions/DbCapture-actions.xml'), 'utf8');
   assert.deepEqual([...actions.matchAll(/<objecttype\b[^>]*\bname="([^"]+)"/g)].map(match => match[1]), ['dbcapture']);
-  assert.match(actions, /resourceBundle="com\.ptc\.dbcapture\.dbCaptureActionResource"/);
+  assert.match(actions, /resourceBundle="com\.custom\.dbcapture\.dbCaptureActionResource"/);
   const models = fs.readFileSync(path.join(root,
     'customization/DbCapture/main/src_web/config/actions/DbCapture-actionModels.xml'), 'utf8');
   for (const action of ['startDbCapture', 'stopDbCapture']) {

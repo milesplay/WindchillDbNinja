@@ -1,4 +1,4 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
 import java.io.StringWriter;
 import java.lang.reflect.Proxy;
@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.ptc.core.components.rendering.RenderingContext;
 import com.ptc.core.components.rendering.guicomponents.TextArea;
@@ -20,19 +21,19 @@ import com.ptc.core.components.rendering.guicomponents.IconComponent;
 import com.ptc.core.components.descriptor.ModelContext;
 import com.ptc.core.components.descriptor.ComponentDescriptor;
 import com.ptc.core.components.descriptor.DataUtilityHelper;
-import com.ptc.dbcapture.engine.DatabaseTime;
-import com.ptc.dbcapture.engine.IdentityResolver;
-import com.ptc.dbcapture.mvc.DbCaptureReportDataUtility;
-import com.ptc.dbcapture.mvc.DbCaptureSessionDiagnosticsDataUtility;
-import com.ptc.dbcapture.mvc.builders.DbCaptureChangeTableBuilder;
-import com.ptc.dbcapture.mvc.builders.DbCaptureSessionTableBuilder;
+import com.custom.dbcapture.engine.DatabaseTime;
+import com.custom.dbcapture.engine.IdentityResolver;
+import com.custom.dbcapture.mvc.DbCaptureReportDataUtility;
+import com.custom.dbcapture.mvc.DbCaptureSessionDiagnosticsDataUtility;
+import com.custom.dbcapture.mvc.builders.DbCaptureChangeTableBuilder;
+import com.custom.dbcapture.mvc.builders.DbCaptureSessionTableBuilder;
 import com.ptc.mvc.components.ColumnConfig;
 import com.ptc.mvc.components.ComponentConfig;
 import com.ptc.mvc.components.ComponentConfigFactory;
 import com.ptc.mvc.components.TableConfig;
 import com.ptc.netmarkets.util.beans.NmCommandBean;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import wt.fc.ObjectIdentifier;
 import wt.fc.PersistInfo;
 import wt.query.QuerySpec;
@@ -264,7 +265,7 @@ public final class PresentationTest {
         DbCaptureChangeTableBuilder builder = new DbCaptureChangeTableBuilder();
         builder.setComponentConfigFactory(factory);
         builder.buildComponentConfig(null);
-        List<String> ids = columns.stream().map(ComponentConfig::getId).toList();
+        List<String> ids = columns.stream().map(ComponentConfig::getId).collect(Collectors.toList());
         check(ids.contains("dbcObjectCount") && !ids.contains("rowsAffected"),
                 "Rows is restored as the Object-entry count without exposing the old stored tally");
         check(ids.containsAll(List.of("details", "lastChangeTime", "dbcObjectName", "dbcObjectNumber")),
@@ -273,7 +274,7 @@ public final class PresentationTest {
         DbCaptureSessionTableBuilder sessions = new DbCaptureSessionTableBuilder();
         sessions.setComponentConfigFactory(factory);
         sessions.buildComponentConfig(null);
-        ids = columns.stream().map(ComponentConfig::getId).toList();
+        ids = columns.stream().map(ComponentConfig::getId).collect(Collectors.toList());
         check(ids.containsAll(List.of("status", "captureMode", "warnings")),
                 "Status, Mode and Warnings remain available by default");
         check(!ids.contains("errorText"), "Error is removed from Capture Sessions and its column chooser");
