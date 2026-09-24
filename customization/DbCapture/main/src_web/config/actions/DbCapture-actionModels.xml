@@ -2,13 +2,14 @@
 <!DOCTYPE actionmodels SYSTEM "customActionmodels.dtd">
 <actionmodels>
 
-   <!-- incremental="" adds to the shipped model instead of replacing it, so
-        PTC's own header entries stay untouched across upgrades.
+   <!-- PTC merges these partial models incrementally. When Wex replaces a
+        duplicate model, the Wex-compatible planner resolves them against the
+        current target navigation models before installation.
 
         Both entries chain off each other behind one separator, so Start and
         Stop sit together as a block. Without an insertAfter of its own, a
         second action lands at the very end of the menu. -->
-   <model name="header actions" incremental="">
+        <model name="header actions" incremental="true">
       <action name="separator" type="separator"
               insertAfterActionName="clipboard" insertAfterObjectType="netmarkets"/>
       <action name="startDbCapture" type="dbcapture"
@@ -18,7 +19,7 @@
    </model>
 
    <!-- A sub tab under Site, alongside Utilities. -->
-   <model name="site navigation" incremental="">
+        <model name="site navigation" incremental="true">
       <action name="dbCaptureAdmin" type="dbcapture"
               insertAfterActionName="listUtilities" insertAfterObjectType="site"/>
    </model>

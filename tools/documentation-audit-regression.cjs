@@ -191,7 +191,7 @@ for (const name of [...packageDocs, 'LOCAL-INSTALL.md']) {
 test('maintainer provenance identifies only the locked custom generated entries and unchanged model sources', () => {
   const text = prose('HANDOFF.md');
   assert.match(text, /tools\/build-prebuilt\.mjs/);
-  assert.match(text, /--release 11 -proc:none/);
+  assert.match(text, /--release 17 -proc:none/);
   assert.match(text, /fresh module-only JAR, not an overlay retaining stale implementation classes/);
   assert.match(text, /15 fingerprint-locked custom generated JAR entries/);
   assert.match(text, /Model base classes \| 7/);

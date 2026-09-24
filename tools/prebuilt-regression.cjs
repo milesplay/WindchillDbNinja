@@ -59,7 +59,7 @@ async function fixture(t) {
   const {metadataNames, sdkFiles, generatedEntries, generatedSourceFiles} = await api;
   const {pngCrc32} = await checksums;
   // These are parser fixtures only, not executable Java classes or model objects.
-  const classBytes = Buffer.from('cafebabe000000370001', 'hex');
+  const classBytes = Buffer.from('cafebabe0000003d0001', 'hex');
   const entries = new Map([
     ['META-INF/MANIFEST.MF', Buffer.from('Manifest-Version: 1.0\n')],
     ['com/custom/dbcapture/StandardDbCaptureService.class', classBytes],
@@ -72,8 +72,8 @@ async function fixture(t) {
     put(directory, relative, text);
     sources[relative] = sha(text);
   }
-  const target = {os: 'win32', arch: 'x64', javaMajor: 11, windchill: '12.1.2.23',
-    oracleMajor: 19, servlet: 'javax', layout: 'traditional-codebase'};
+  const target = {os: 'win32', arch: 'x64', javaMajor: 17, windchill: '13.0.2.6', windchillBuild: 33,
+    oracleMajor: 19, servlet: 'jakarta', layout: 'traditional-codebase'};
   const sdk = Object.fromEntries(sdkFiles.map(name => [name, sha(Buffer.from('SDK fixture'))]));
   const metadataBytes = Buffer.from('aced0005', 'hex');
   const baseline = {schemaVersion: 1, target, sdk, generatedInputSources: sources,
@@ -85,7 +85,7 @@ async function fixture(t) {
   for (const name of metadataNames) payloads.set(`prebuilt/metadata/com/custom/dbcapture/${name}`, metadataBytes);
   const manifest = {schemaVersion: 1, package: 'windchill-db-ninja', version: '0.1.0',
     target, sdk, sources,
-    build: {method: 'target-sdk-javac-with-matching-generated-models', javaRelease: 11,
+    build: {method: 'target-sdk-javac-with-matching-generated-models', javaRelease: 17,
       annotationProcessing: false, generatedModelBaselineSha256: sha(baselineBytes)},
     artifacts: Object.fromEntries([...payloads].map(([name, bytes]) => [name, {bytes: bytes.length, sha256: sha(bytes)}]))};
   put(directory, 'package.json', JSON.stringify({name: manifest.package, version: manifest.version}));
@@ -99,7 +99,8 @@ test('prebuilt package requires exact module inventory, current sources and matc
   const f = await fixture(t), {readPrebuilt} = await api;
   const result = readPrebuilt(f.directory);
   assert.equal(Object.keys(result.metadata).length, 7);
-  assert.equal(result.manifest.target.windchill, '12.1.2.23');
+  assert.equal(result.manifest.target.windchill, '13.0.2.6');
+  assert.equal(result.manifest.target.windchillBuild, 33);
   assert.equal(result.jar, path.join(f.directory, 'prebuilt/DbCapture.jar'));
 });
 
@@ -126,6 +127,18 @@ test('prebuilt package name and version must match the release manifest', async 
   }
 });
 
+test('target-CCD candidate manifests require annotation-processed provenance', async t => {
+  const {readPrebuilt} = await api;
+  const f = await fixture(t);
+  f.manifest.build.method = 'target-ccd';
+  f.manifest.build.annotationProcessing = true;
+  f.save();
+  assert.equal(readPrebuilt(f.directory).manifest.build.method, 'target-ccd');
+  f.manifest.build.annotationProcessing = false;
+  f.save();
+  assert.throws(() => readPrebuilt(f.directory), /Unsupported or incomplete prebuilt manifest/);
+});
+
 test('updating manifest hashes cannot substitute unrelated ClassInfo or generated base classes', async t => {
   const {readPrebuilt, metadataNames, generatedEntries} = await api;
   for (const kind of ['metadata', 'generated']) {
@@ -135,7 +148,7 @@ test('updating manifest hashes cannot substitute unrelated ClassInfo or generate
     let bytes;
     if (kind === 'metadata') bytes = Buffer.concat([Buffer.from('aced0005', 'hex'), Buffer.from('different model')]);
     else {
-      f.entries.set(generatedEntries[0], Buffer.from('cafebabe000000370002', 'hex'));
+      f.entries.set(generatedEntries[0], Buffer.from('cafebabe0000003d0002', 'hex'));
       bytes = storedZip(f.entries, f.crc32);
     }
     put(f.directory, relative, bytes);
@@ -147,7 +160,7 @@ test('updating manifest hashes cannot substitute unrelated ClassInfo or generate
 
 test('the qualified prebuilt profile cannot claim Linux, another Java major or non-Oracle support', async t => {
   const {readPrebuilt} = await api;
-  for (const [key, value] of [['os', 'linux'], ['arch', 'arm64'], ['javaMajor', 17], ['oracleMajor', 23]]) {
+  for (const [key, value] of [['os', 'linux'], ['arch', 'arm64'], ['javaMajor', 11], ['oracleMajor', 23]]) {
     const f = await fixture(t);
     f.manifest.target[key] = value;
     f.save();
@@ -190,23 +203,26 @@ test('target verification requires exact JDK, SDK hashes and Windchill support d
   const home = path.join(f.directory, 'target with spaces');
   for (const relative of sdkFiles) put(home, relative, 'SDK fixture');
   const java = path.join(f.directory, process.platform === 'win32' ? 'java-probe-fixture.cmd' : 'java-probe-fixture');
-  const probe = (major, release) => {
+  const probe = (major, release, build = 33) => {
+    const family = release.split('.').slice(0, 2).join('.');
     const script = process.platform === 'win32'
       ? `@echo off\r\necho %* | %SystemRoot%\\System32\\findstr.exe /c:"-version" >nul\r\n`
         + `if not errorlevel 1 (echo openjdk version "${major}.0.19" 1>&2& exit /b 0)\r\n`
-        + `echo 12.1.2.23 12.1 wnc.${release} 38\r\n`
+        + `echo ${release} ${family} wnc.${release} ${build}\r\n`
       : `#!/bin/sh\nif [ "$1" = "-version" ]; then printf 'openjdk version "${major}.0.19"\\n' >&2; exit 0; fi\n`
-        + `printf '12.1.2.23 12.1 wnc.${release} 38\\n'\n`;
+        + `printf '${release} ${family} wnc.${release} ${build}\\n'\n`;
     fs.writeFileSync(java, script, {mode: 0o700});
   };
-  probe(11, '12.1.2.23');
+  probe(17, '13.0.2.6', 33);
   const candidate = readPrebuilt(f.directory);
   assert.equal(verifyPrebuiltTarget({home, java}, candidate), candidate);
-  probe(17, '12.1.2.23');
+  probe(11, '13.0.2.6', 33);
   assert.throws(() => verifyPrebuiltTarget({home, java}, candidate), /Java major version/);
-  probe(11, '12.1.2.24');
+  probe(17, '13.0.2.5', 33);
   assert.throws(() => verifyPrebuiltTarget({home, java}, candidate), /datecode/);
-  probe(11, '12.1.2.23');
+  probe(17, '13.0.2.6', 38);
+  assert.throws(() => verifyPrebuiltTarget({home, java}, candidate), /build number/);
+  probe(17, '13.0.2.6', 33);
   fs.appendFileSync(path.join(home, sdkFiles[0]), 'modified SDK');
   assert.throws(() => verifyPrebuiltTarget({home, java}, candidate), /SDK fingerprint/);
 });

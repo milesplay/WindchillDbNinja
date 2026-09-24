@@ -5,9 +5,19 @@ Custom source and custom compiled JAR/ClassInfo distribution is owner-authorized
 under [MIT](LICENSE). Publication and live deployment remain separate from that
 approval. Start with [installation](INSTALL.md),
 [compatibility](COMPATIBILITY.md) and [operating semantics](OPERATIONS.md).
-The current qualified Windows line is `v0.2.0-wc121-win1`; use
-[WINDOWS-PORTING.md](WINDOWS-PORTING.md) for a new Windows release such as
-13.0.2 rather than replacing this target's artifacts.
+The last qualified Windows line is `v0.2.0-wc121-win1`. The separate
+`port/windows-wc1302` / `0.3.0-wc1302-win1` line is an unqualified source
+candidate for Windchill 13.0.2.6 build 33 / Information Modeler 13.0.2.0
+build 396. Target CCD JAR, seven ClassInfo files and a target sql3-generated
+explicit-BYTE create-only DDL candidate now exist privately. The approved
+`SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY` grants, target DDL and initial
+28-file deployment plan were applied on the authorized development/test
+target; schema postchecks passed. A later Wex XML-only menu repair was applied,
+and the user reports the menus fixed. An owner restart and post-restart
+acceptance after that repair are not recorded. The candidate remains unreleased
+and unqualified pending end-to-end, monitoring-flush and multi-node acceptance.
+Keep the 12.1/Linux artifacts historical; do not reuse them or replay target
+changes.
 
 ## Architecture
 
@@ -26,8 +36,8 @@ The current qualified Windows line is `v0.2.0-wc121-win1`; use
   `dynamicMenuLoad`/`dynamicMenuShow` events, without changing OOTB artifacts.
 - [Deployment tool](tools/dbninja.mjs): target-native CCD build, private plans,
   SafeArea installation, XCONF propagation, JS combination, verification and rollback.
-- [XML helper](tools/ConfigurationFiles.java): JDK XML-aware shared-file merges;
-  packaging-only, not installed in Windchill.
+- [XML helper](tools/ConfigurationFiles.java): local JDK XML-aware shared-file
+   merges and target-model planning; not installed in Windchill.
 
 Existing action IDs, URLs, persistent Java package names, capture IDs, model
 associations, serialized evidence types and saved setting keys are deliberately
@@ -75,7 +85,7 @@ unchanged. Renaming them can break old records or serialization.
 
 ## Package contract
 
-The optional prebuilt candidate is `prebuilt/DbCapture.jar`, seven
+The historical 0.2.0 prebuilt candidate is `prebuilt/DbCapture.jar`, seven
 `prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files and
 `prebuilt/manifest.json` with checksums, source fingerprints and target
 version/SDK fingerprints. Its exact baseline is **Windchill Services12.1.2.23
@@ -85,8 +95,11 @@ The evidence store is qualified for a local NTFS volume with explicit ACL and
 link/reparse-point checks. Other Windows service identities/filesystems require
 separate qualification.
 
-Default `plan` uses the target build; `plan --prebuilt` explicitly selects the
-verified package. Do not silently fall back to an old installed JAR.
+The historical 0.2.0 `plan --prebuilt` route selects only its exact qualified
+package. For 0.3.0 use only the private 13.0.2.6 target-CCD candidate and its
+reviewed, unapplied plan. Do not use historical 12.1/Linux artifacts or silently
+fall back to an old installed JAR. Oracle execution and runtime acceptance
+remain separately gated.
 [Fresh-install DDL](sql/oracle/README.md) is bundled for the exact Oracle 19c /
 unchanged Windchill 12.1.2.23 model / `wt.db.maxBytesPerChar=3` / BYTE / INDX
 profile; all other profiles require target generation and qualification.
@@ -104,8 +117,13 @@ agree. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.1 packaging-only patch.
 
 ### Current-source prebuilt assembly
 
+The historical 12.1 prebuilt flow used `--release 11 -proc:none`. The 0.3
+source/validation tools now target `--release 17`; do not run prebuilt assembly
+until a new target CCD baseline is generated and reviewed. The old metadata and
+model baseline are invalid for WC 13.0.2.
+
 `tools/build-prebuilt.mjs` compiles **all current runtime Java** against the
-target SDK with `--release 11 -proc:none` into private output. It assembles a
+target SDK with `--release 17 -proc:none` into private output. It assembles a
 fresh module-only JAR, **not an overlay retaining stale implementation classes**.
 Only these 15 fingerprint-locked custom generated JAR entries are retained from
 the previous verified target CCD generation:

@@ -9,6 +9,89 @@ The owner has authorized custom source and custom JAR/ClassInfo publication at
 Windows 12.1 target binary and strict endpoint NET semantics. This authorization
 does not attest to a commit/push, completed release tests or new live deployment.
 
+## WC 13.0.2.6 port candidate: 2026-09-24
+
+This is the sanitized qualification record for the unreleased
+`0.3.0-wc1302-win1` candidate. Initial deployment and database setup occurred
+on the authorized development/test target. A later Wex XML-only menu repair was
+applied and the user reports the menus fixed; an owner restart and post-restart
+acceptance after that change are not recorded. The candidate remains unqualified.
+
+| Component | Verified state |
+|---|---|
+| Windchill | `wnc.13.0.2.6`, build 33; no patches installed |
+| Information Modeler | `infomodeler.13.0.2.0`, build 396 |
+| JDK / Servlet | Amazon Corretto 17.0.11.9.1; Jakarta Servlet in both installed API JARs |
+| OS / evidence volume | Windows x64; local fixed NTFS volume; WT_HOME ancestors are not reparse points |
+| Environment | Owner-confirmed development/test, not production |
+| Node | Existing VS Code Server Node 24.18.1; no toolchain was provisioned |
+| Pre-deployment inventory | DB Ninja JAR, ClassInfo, XCONF, JSP, action/MVC/validator and fragment markers absent; service/presentation/declaration markers absent before the initial plan |
+| Pre-deployment evidence directory | `WT_HOME/.dbcapture-evidence` was absent during initial preflight; real capture/ACL acceptance remains outstanding |
+| Pre-deployment service slot | Read-only xconfmanager lookup returned no information for 905000; preflight found no conflicting registration before installation |
+| Applied Oracle grants | `SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY`; no broader database grants were approved |
+| Database change | Target create-only DDL applied after approval; schema postchecks passed |
+| Deployment | Initial private 28-file plan applied; Wex XML-only menu plan applied later |
+
+| Check | Result |
+|---|---|
+| `node tools/dbninja.mjs test` | **308/308 Node regressions**, zero failed/skipped |
+| Local profiler diagnostics | **285 assertions passed** with Java 17 and local fixture files; isolated JVMs, no server changes |
+| Focused Wex/profile/plan/prebuilt regressions | 3 Wex/XML tests, 1 private-plan test and 1 exact-build test passed |
+| Earlier target-specific validation | 77 presentation assertions, target API linkage, five JSP compilations and 35 icon assertions passed during initial qualification; not rerun for this repository-only follow-up |
+| `node tools/validate.mjs icons` | 35 action-icon assertions passed against target SDK |
+| `node --test tools/documentation-audit-regression.cjs` | 72/72 passed |
+| `node tools/dbninja.mjs preflight` | Passed Windows x64, Java 17, Jakarta Servlet and installed PTC tooling checks |
+| Installed `xconfmanager --validateasdecl` | Both module XCONF fragments validated against the target DTD |
+| Target CCD | Final rebuild includes the Windows metadata-read retry fix; private JAR is 281,066 bytes, SHA-256 `741de4f629900a914450654a262b056191ba024c59e6a457444a823c2eb1ff9e`; exactly seven ClassInfo files and 15 locked generated JAR entries |
+| Candidate package | Private target-CCD manifest previously passed source/generated-entry/metadata and exact 13.0.2.6 SDK/datecode verification; manifest SHA-256 `b327387ff017185bfe8e0c780a1da6f498309b6c578c97e7f246c05b995ac860`; model-baseline SHA-256 `0e8fa4f556decdad0cf6fa7b3f7ead99fc8bd3a81b8d190d8b0f587206a58bee`. The repository verifier now requires and checks `windchillBuild` for 13.0.2 targets; the private manifest was not revalidated against that new guard in this repository-only update |
+| Target SQL generation | Eight target PTC sql3 inputs; create-only candidate has 4 tables, 4 validated-PK definitions, 14 secondary indexes and 18 total indexes |
+| Create-only SQL | Explicit BYTE on all 45 target VARCHAR2 declarations with numeric widths unchanged; 9,890 bytes, SHA-256 `03193942212e190a46a02983259191496e6e944312953bdd290d9fb0c457089a`; no DROP/DML/GRANT. Applied after approval; postchecks passed |
+| Initial deployment plan | Private ACL-verified 28-file hash-bound plan; 7 ClassInfo, 5 JSPs, 2 PNGs; no direct generated-properties/root-xconf destinations; fresh role XML adds only one incremental `DB_CAPTURE_ADMIN` component (`defaultAll=false`); MethodServer site.xconf hash is a precondition; SHA-256 `e1a0b805431f300c253b9c84e1d842248e02265b418f3f7029f72ead00b11557`; applied |
+
+Initial read-only checks matched the Windchill schema owner and service to the
+installed database settings. Oracle 19.3.0.0.0 was reported by the connection
+banner; the exact active RU remains unconfirmed. The owner session verified
+BYTE length semantics and readable `USER_TAB_MODIFICATIONS`. `DBMS_STATS`
+execution was available through PUBLIC. Before approval, the SCN package probe
+returned ORA-00904 and MANAGER could not read the required V$ views.
+
+After approval, `SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY` were applied to
+MANAGER. The SCN fallback now works; V$PARAMETER and V$UNDOSTAT remain
+unavailable. The target create-only DDL was applied successfully. Postchecks
+verified four tables, four enabled/validated primary keys, 18 valid normal
+indexes plus three valid LOB indexes, 45 BYTE VARCHAR2 columns, and the expected
+USERS/INDX tablespaces. No quota change, broader grant or monitoring-statistics
+flush was performed. A real capture and workload undo behavior remain untested.
+
+The first CCD attempt, before Modeler was installed, failed and restored the
+known ClassInfo files. After the owner installed Information Modeler, Windchill
+was confirmed as 13.0.2.6 build33 / Modeler 13.0.2.0 build396 and target CCD
+succeeded. The current private JAR/ClassInfo and model-baseline/manifest package
+passed exact target SDK/datecode verification. Its 24 pre-build snapshots show
+all known live ClassInfo paths restored. The owner confirmed a concurrent
+`site.xconf` MethodServer-count change was intentional; the current site.xconf,
+generated `wt.properties` and target-file hints were retained and were not
+restored over. The CCD build itself did not restart services; deployment and
+service startup occurred later.
+
+The installed target generator emitted eight `com.custom.dbcapture` sql3 CREATE
+inputs. Only those inputs were assembled into a create-only first-install
+candidate: 4 tables, 4 PKs, 14 secondary indexes and 18 total indexes. Explicit
+BYTE was added to 45 unqualified VARCHAR2 declarations without changing numeric
+widths. The combined file is 9,890 bytes, SHA-256
+`03193942212e190a46a02983259191496e6e944312953bdd290d9fb0c457089a`; it has no
+DROP/DML/GRANT and was applied after approval. The private ACL-verified 28-file
+plan was applied. A later Wex XML-only menu plan was also applied, and the user
+reports the menus fixed; an owner restart after that repair is not recorded.
+Upstream main remains Linux/13.0.2.11/`com.ptc`, so its compiled JAR/ClassInfo
+are not used for this Windows `com.custom` target.
+
+Final runtime acceptance remains incomplete: administrator/ordinary-user controls,
+GET/CSRF behavior, browser UI/CSV/diagnostics, disposable capture, FLASHBACK,
+SNAPSHOT, strict endpoint NET, service ACLs after evidence-root creation, and
+multi-node/failover behavior. The Wex menu outcome is user-reported; it was not
+rechecked after the owner restart. A single-node result would not qualify a cluster.
+
 ## Exact binary baseline
 
 | Component | First-binary target |

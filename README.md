@@ -21,23 +21,36 @@ JavaScript bundles, database dumps or private case records are included.
 
 ## Download and schema
 
-This release line is the **0.2.0-wc121-win1 Windows 12.1 development/test port** derived from
-the [upstream v0.1.1 source](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1).
-Use this target-qualified checkout and its regenerated manifest; do not reuse the
-upstream Linux JAR/ClassInfo. Keep it in a private directory outside the web root
-and follow [INSTALL.md](INSTALL.md). For a Windows 13.0.2 target, follow
-[WINDOWS-PORTING.md](WINDOWS-PORTING.md) and create a separate release line.
-No Maven/npm/container package is needed.
+This branch is the **0.3.0-wc1302-win1 Windows Windchill 13.0.2 port candidate**, based on
+the [upstream v0.1.1 source](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1)
+and the reviewed Windows 12.1 port. The target software profile is confirmed as
+Windchill 13.0.2.6 build 33 without patches, Information Modeler 13.0.2.0 build
+396, Java 17 and Jakarta Servlet. A target CCD JAR/seven ClassInfo files,
+private model baseline/manifest, sql3 DDL candidate and hash-bound deployment
+plan have been prepared. On the authorized development/test target, the two
+approved grants and target CREATE DDL were applied and schema postchecks passed.
+The initial 28-file plan and a later Wex XML-only menu plan were applied; the
+user reports the menus are fixed. An owner restart and post-restart runtime
+acceptance after that Wex change are not recorded. A disposable end-to-end
+capture, monitoring-statistics flush and multi-node/failover checks remain
+untested, so this candidate is **not qualified or released**. Do not replay the
+DDL or plans. The
+checked-in 12.1 JAR, ClassInfo, manifest and DDL are historical and invalid for
+this target. Keep the checkout outside the web root and follow
+[INSTALL.md](INSTALL.md). No Maven/npm/container package is needed.
 
-The DB Capture table DDL is now included:
+The checked-in DB Capture DDL is restricted to the historical 12.1 profile:
 [guarded first-install SQL](sql/oracle/create-db-ninja.sql),
 [individual table/index scripts and conditions](sql/oracle/README.md), and
 [schema checksums/profile](sql/oracle/schema-profile.json).
 It creates **4 tables, 4 primary keys and 14 secondary indexes** for the qualified
 Oracle 19c / Windchill 12.1.2.23 / `wt.db.maxBytesPerChar=3` / INDX profile.
-It is not universal Oracle SQL and must not be run on an existing installation.
-See [the changelog](CHANGELOG.md) for the port. Runtime binary and generated
-metadata were rebuilt with the Windchill 12.1.2.23 SDK.
+It is not valid for the 13.0.2 candidate and must not be run there. A separate
+private create-only DDL candidate was generated with the installed 13.0.2.6 SDK;
+its exact schema profile and hash are recorded in [LOCAL-INSTALL.md](LOCAL-INSTALL.md).
+It was applied to this target after approval and verified by schema postchecks;
+it is not portable to another target.
+See [the changelog](CHANGELOG.md) for the port status.
 
 ## Why DB Ninja?
 
@@ -71,8 +84,10 @@ Read [AGENTS.md](AGENTS.md), then [COMPATIBILITY.md](COMPATIBILITY.md),
 approved privilege grants, DDL creation and post-change checks.
 Inspect the target; do not infer its OS, Java version,
 database, credentials or maintenance permission from this repository.
-The qualified binary is **Windows x64 only**, with a local NTFS evidence directory
-protected by owner/system-administrator ACL checks and link/reparse-point rejection.
+The historical qualified binary is **Windows x64 only**, with a local NTFS
+evidence directory protected by owner/system-administrator ACL checks and
+link/reparse-point rejection. The 13.0.2 candidate has not completed runtime ACL
+acceptance.
 Node.js 22 or newer and the target's licensed PTC SDK/supported JDK are required
 for the deployment and qualification tools. No npm dependencies are needed.
 
@@ -82,34 +97,42 @@ authorization, conflicting configuration, unavailable PTC tools or unverified
 prerequisites. A repository URL does not grant access to a server or database.
 
 **Publication handoff:** the owner has authorized custom source and custom
-compiled artifacts under [MIT](LICENSE). The release contract is
+compiled artifacts under [MIT](LICENSE). The 0.2.0 release contract is
 `prebuilt/DbCapture.jar`, exactly seven
 `prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files, and
 `prebuilt/manifest.json` with checksums, source fingerprints and target version/SDK
-fingerprints. The [qualification summary](LOCAL-INSTALL.md) records successful current-source
-and selected-binary checks. This is not a claim that the new collector fixes
-have been deployed to a running server or qualified under production load.
+fingerprints. Those checked-in artifacts are not valid for the 0.3.0 port branch.
+The [qualification summary](LOCAL-INSTALL.md) separates historical 12.1
+qualification from the private WC13 target-built candidate. The candidate has
+been deployed to the authorized development/test target, and its approved
+grants and target DDL have been applied. It remains unreleased and unqualified
+pending final runtime acceptance.
 
-Prebuilt assembly compiles all current runtime Java into a fresh module-only JAR
-and retains only
-fingerprint-locked custom generated entries and matching ClassInfo from the
-prior verified target CCD generation. This is **current-source compilation with
-unchanged generated model artifacts, not a new CCD or annotation-processing
-run** and performs no live metadata writes. A changed model or CPS requires
-target CCD and a reviewed new baseline. See [binary provenance](HANDOFF.md#current-source-prebuilt-assembly).
+The historical 0.2.0 prebuilt assembly compiles all current runtime Java into a
+fresh module-only JAR and retains only fingerprint-locked generated entries
+and matching ClassInfo. This is current-source compilation with unchanged
+generated model artifacts, **not a new CCD or annotation-processing run**; this
+historical assembly performs no live metadata writes. A changed model or CPS requires target CCD
+and a reviewed new baseline. The 0.3.0
+candidate instead uses the newly generated target CCD JAR and ClassInfo, with
+its own private manifest/model baseline; neither historical metadata set is
+reused.
 
-The optional `plan --prebuilt` route uses the qualified candidate; the default
-`plan` uses the target build. See [publication gates](PUBLICATION.md#release-gates)
-and the [qualification summary](LOCAL-INSTALL.md). Previously verified icon
-deployment is separate from the new source/binary fixes and their offline
-release evidence. Never omit failing checks or count skips as acceptance.
+`plan --prebuilt` is only for the historical 0.2.0 target and must not be used
+for 0.3.0. The default `plan` uses the target-built candidate. Set
+`DBNINJA_PRIVATE_PLAN_ROOT` to an ACL-verified directory below `backups/` so the
+hash-bound plan and merged configuration stay private. Planning makes no live
+changes; apply requires separate approval of the exact plan, DBA actions and
+maintenance window. See [publication gates](PUBLICATION.md#release-gates) and
+the [qualification summary](LOCAL-INSTALL.md). Never omit failing checks or
+count skips as acceptance.
 
 ## Compatibility in one minute
 
 | Target | Status |
 |---|---|
 | Windchill Services12.1.2.23 build38 (12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64, traditional `codebase` | Exact qualified `v0.2.0-wc121-win1` baseline; package and target fingerprints must match |
-| Windchill 13.0.2 on Windows | Future port target; use a separate branch, target CCD build, manifest, DDL profile and qualification. The 12.1 prebuilt package is not compatible. |
+| Windchill 13.0.2.6 build33, Information Modeler 13.0.2.0 build396, Corretto 17, Jakarta, Windows x64 | `0.3.0-wc1302-win1` private target-built candidate; approved grants, target DDL and deployment applied on one dev/test system; final runtime acceptance pending. Do not use 12.1/Linux artifacts. |
 | Windchill 13.1.4, Java 21, Oracle 19c | Historical source provenance; qualify this revision on the target |
 | Other Windchill 13.x releases / CPS levels | Target rebuild and full qualification required |
 | Other Windows/Windchill CPS combinations | Not qualified; rebuild ClassInfo/JAR, compile JSPs and repeat runtime acceptance |

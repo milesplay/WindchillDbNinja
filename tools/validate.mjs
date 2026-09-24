@@ -48,7 +48,9 @@ function main() {
   const candidate = prebuilt ? verifyPrebuiltTarget(env, readPrebuilt(bundle)) : null;
   const jar = candidate ? candidate.jar : process.env.DBC_JAR ? path.resolve(process.env.DBC_JAR) : path.join(bundle, 'build/DbCapture.jar');
   const jarExists = fs.existsSync(jar);
-  if (!jarExists && requested !== 'icons') throw new Error('Build DB Ninja first, or set DBC_JAR explicitly to the reviewed candidate JAR.');
+  if (!jarExists && !['icons', 'profiler'].includes(requested)) {
+    throw new Error('Build DB Ninja first, or set DBC_JAR explicitly to the reviewed candidate JAR.');
+  }
   const metadata = path.join(bundle, 'build/metadata');
   const cp = [...(jarExists ? [jar] : []), ...(fs.existsSync(metadata) ? [metadata] : []),
     path.join(home, 'codebase'), path.join(home, 'codebase/WEB-INF/lib/*'),
@@ -82,20 +84,20 @@ function main() {
       const logging = [path.join(home, 'srclib/log4j-api.jar'), path.join(home, 'srclib/log4j-core.jar')].join(path.delimiter);
       const sources = files(path.join(bundle, 'customization/DbCapture/main/src/com/custom/dbcapture/diagnostics'), '.java');
       const classpath = compile(group, [...sources, 'ProfilerDiagnosticsTest.java', 'ProfilerApiCheck.java',
-        'SqlEvidencePresentationTest.java'], logging, ['--release', '11', '-Xlint:all,-classfile', '-Werror']);
+        'SqlEvidencePresentationTest.java'], logging, ['--release', '17', '-Xlint:all,-classfile', '-Werror']);
       execute(classpath, 'com.custom.dbcapture.diagnostics.ProfilerDiagnosticsTest', [path.join(directory, 'evidence-fixtures')]);
       execute(classpath, 'com.custom.dbcapture.diagnostics.SqlEvidencePresentationTest');
       execute([classpath, path.join(home, 'codebase'), path.join(home, 'srclib/*'),
         path.join(home, 'srclib/jmxcore/*'), path.join(home, 'tomcat/lib/*')].join(path.delimiter),
       'com.custom.dbcapture.diagnostics.ProfilerApiCheck');
     } else if (group === 'compatibility') {
-      const classpath = compile(group, ['DiagnosticsReportCompatibilityTest.java'], cp, ['--release', '11']);
+      const classpath = compile(group, ['DiagnosticsReportCompatibilityTest.java'], cp, ['--release', '17']);
       execute(classpath, 'com.custom.dbcapture.DiagnosticsReportCompatibilityTest', [path.join(directory, 'dto-fixtures')]);
     } else if (group === 'smoke') {
       execute(compile(group, ['LocalSmokeTest.java']), 'com.custom.dbcapture.engine.LocalSmokeTest');
     } else if (group === 'icons') {
       const resource = path.join(bundle, 'customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java');
-      const classpath = compile(group, [resource, 'ActionIconTest.java'], cp, ['--release', '11']);
+      const classpath = compile(group, [resource, 'ActionIconTest.java'], cp, ['--release', '17']);
       execute(classpath, 'com.custom.dbcapture.ActionIconTest',
         [path.join(bundle, 'customization/DbCapture/main/src_web/custom/DbCapture/icons'),
           ...actionIcons.map(icon => icon.file)], ['-Djava.awt.headless=true']);
@@ -103,8 +105,8 @@ function main() {
       const sources = files(path.join(bundle, 'customization/DbCapture/main/src/com/custom/dbcapture'), '.java');
       const tests = ['CaptureContractAuditTest.java', 'CaptureHelperTest.java', 'CaptureLifecycleTest.java'];
       const variants = [
-        ['source', compile(group, [...sources, ...tests], cp, ['--release', '11'])],
-        ['candidate', compile('candidate-contracts', tests, cp, ['--release', '11'])]
+        ['source', compile(group, [...sources, ...tests], cp, ['--release', '17'])],
+        ['candidate', compile('candidate-contracts', tests, cp, ['--release', '17'])]
       ];
       for (const [variant, classpath] of variants) {
         console.log(`--- contracts: ${variant} ---`);

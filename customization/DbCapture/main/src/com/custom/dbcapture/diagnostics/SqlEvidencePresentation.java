@@ -265,7 +265,7 @@ public final class SqlEvidencePresentation {
          "USING", "WHEN", "RETURNING");
    private static final String[] PLUMBING = {
       "com.custom.dbcapture.diagnostics.", "org.apache.logging.log4j.", "wt.util.logger.",
-      "java.", "jdk.", "sun.", "javax.servlet.", "org.apache.catalina.", "org.apache.coyote.",
+      "java.", "jdk.", "sun.", "jakarta.servlet.", "org.apache.catalina.", "org.apache.coyote.",
       "org.apache.tomcat.", "wt.servlet.", "wt.httpgw.", "wt.services.ServiceFactory$",
       "wt.session.SessionContextDestroyer.", "com.ptc.core.components.filter.",
       "com.ptc.core.ui.validation.URLValidationFilter.", "com.ptc.jws.servlet.filter.",

@@ -5,6 +5,10 @@ import {confined} from './filesystem.mjs';
 
 export const tables = ['DbCaptureAttrDelta', 'DbCaptureChange', 'DbCaptureSession', 'DbCaptureTableChange'];
 
+function addExplicitByteSemantics(sql) {
+  return sql.replace(/\b(VARCHAR2\s*\(\s*\d+)(\s*\))/gi, '$1 BYTE$2');
+}
+
 function statements(source, file) {
   const result = [];
   let text = '', quoted = false, blockComment = false, lineStart = true;
@@ -155,16 +159,23 @@ function validateIndex(sql, table, columns, indexes) {
   return validateStorage(suffix, false);
 }
 
-export function readCreateOnly(directory) {
+export function readCreateOnly(directory, {explicitByteSemantics = false} = {}) {
   const fragments = [];
   const columns = new Map(), indexes = new Set(), tablespaces = new Set(), primaryKeys = [];
-  let comments = 0;
+  let comments = 0, byteWidthsMadeExplicit = 0;
   for (const kind of ['Table', 'Index']) {
     for (const table of tables) {
       const file = confined(directory, `create_${table}_${kind}.sql`);
       if (!fs.lstatSync(file).isFile()) throw new Error(`Expected a regular DDL file: ${file}`);
       const original = fs.readFileSync(file, 'utf8');
-      const parts = statements(original, file);
+      const parts = statements(original, file).map(sql => {
+        if (!explicitByteSemantics || kind !== 'Table' || !/^CREATE\s+TABLE\b/i.test(sql)) return sql;
+        const normalized = addExplicitByteSemantics(sql);
+        const explicitWidths = /\bVARCHAR2\s*\(\s*\d+\s+BYTE\s*\)/gi;
+        byteWidthsMadeExplicit += (normalized.match(explicitWidths) || []).length
+          - (sql.match(explicitWidths) || []).length;
+        return normalized;
+      });
       let creates = 0, tableComments = 0;
       for (const sql of parts) {
         if (kind === 'Table') {
@@ -191,11 +202,11 @@ export function readCreateOnly(directory) {
     }
   }
   return {fragments, tables: tables.map(table => table.toUpperCase()), primaryKeys: primaryKeys.sort(),
-    indexes: [...indexes].sort(), tablespaces: [...tablespaces].sort(), comments};
+    indexes: [...indexes].sort(), tablespaces: [...tablespaces].sort(), comments, byteWidthsMadeExplicit};
 }
 
-export function createOnlySql(directory) {
-  const definition = readCreateOnly(directory);
+export function createOnlySql(directory, options = {}) {
+  const definition = readCreateOnly(directory, options);
   const quoted = names => names.map(name => `'${name}'`).join(', ');
   const names = quoted(definition.tables);
   const objects = quoted([...definition.tables, ...definition.primaryKeys, ...definition.indexes].sort());
@@ -206,12 +217,15 @@ export function createOnlySql(directory) {
    IF tablespace_count <> ${definition.tablespaces.length} THEN
       RAISE_APPLICATION_ERROR(-20003, 'Required index/data tablespace is unavailable. Ask the DBA to review the DDL profile.');
    END IF;` : '';
+  const widthNote = options.explicitByteSemantics
+    ? '-- Explicit BYTE added only to unqualified target sql3 VARCHAR2 widths; numeric lengths unchanged.\n'
+    : '';
   return `-- First installation only. Assembled from reviewed module CREATE scripts.
 -- Use only the matching Windchill/Oracle/byte-width profile. Development and test only.
 -- Review tablespaces, byte widths and all statements with the DBA.
 -- Run as the Windchill schema. Oracle DDL commits; partial failure is not rollback-safe.
 -- Use a fresh schema-owner session with no pending work; never run as SYS or SYSTEM.
-WHENEVER OSERROR EXIT FAILURE ROLLBACK
+${widthNote}WHENEVER OSERROR EXIT FAILURE ROLLBACK
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
 SET DEFINE OFF
 SET ECHO ON
@@ -242,9 +256,12 @@ SELECT index_name, table_name, status FROM user_indexes
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    if (process.argv.length !== 4) throw new Error('Usage: node tools/create-schema.mjs TARGET_GENERATED_DDL_DIRECTORY OUTPUT.sql');
+    const explicitByteSemantics = process.argv[4] === '--explicit-byte';
+    if ((process.argv.length !== 4 && process.argv.length !== 5) || (process.argv[4] && !explicitByteSemantics)) {
+      throw new Error('Usage: node tools/create-schema.mjs TARGET_GENERATED_DDL_DIRECTORY OUTPUT.sql [--explicit-byte]');
+    }
     const output = path.resolve(process.argv[3]);
-    const sql = createOnlySql(fs.realpathSync(process.argv[2]));
+    const sql = createOnlySql(fs.realpathSync(process.argv[2]), {explicitByteSemantics});
     fs.mkdirSync(path.dirname(output), {recursive: true, mode: 0o700});
     fs.writeFileSync(output, sql, {flag: 'wx', mode: 0o600});
     console.log(`Created ${output}. No SQL was executed. Keep site-specific regenerated DDL private; review the target profile with the DBA.`);

@@ -58,7 +58,7 @@ function main() {
   const extension = process.platform === 'win32' ? '.exe' : '';
   const compiler = path.join(javaHome, `bin/javac${extension}`);
   const compilerVersion = execute(compiler, ['-version'], 'compiler-version');
-  execute(compiler, ['-J-Xmx512m', `-J-Djava.io.tmpdir=${work}`, '--release', '11',
+  execute(compiler, ['-J-Xmx512m', `-J-Djava.io.tmpdir=${work}`, '--release', '17',
     '-encoding', 'UTF-8', '-proc:none', '-cp', classpath, '-d', classes,
     ...sourceNames.filter(name => name.endsWith('.java')).map(name => confined(root, name))], 'compile');
   const jar = path.join(work, 'DbCapture.jar');
@@ -82,7 +82,7 @@ function main() {
     version: JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version,
     target: profile.target,
     build: {method: 'target-sdk-javac-with-matching-generated-models', compiler: compilerVersion,
-      javaRelease: 11, builtAt: new Date().toISOString(), annotationProcessing: false,
+      javaRelease: 17, builtAt: new Date().toISOString(), annotationProcessing: false,
       generatedModelBaselineSha256: fingerprint(confined(root, 'deployment/generated-model-baseline.json')),
       note: 'All current runtime Java sources compiled. Only unchanged, fingerprint-locked custom generated model/resource entries and ClassInfo were retained from the qualified target. No live files, PTC SDK libraries or generated PTC JavaScript bundles are copied into this package.'},
     sdk: profile.sdk, sources,

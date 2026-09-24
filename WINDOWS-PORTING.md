@@ -10,10 +10,66 @@ has the repository but does not have access to the original target.
 - `v0.2.0-wc121-win1` is the qualified Windows 12.1 development/test port for
   Windchill Services 12.1.2.23 build38, Java 11, `javax.servlet`, Oracle 19c,
   Windows x64 and the traditional `codebase` layout.
-- A future Windows 13.0.2 port must use a new branch and release line, for
-  example `port/windows-wc1302` and `v0.3.0-wc1302-win1`. It must have its own
-  target-built JAR, ClassInfo files, manifest, schema profile and qualification
-  record. Do not replace the 12.1 prebuilt files in place.
+- `port/windows-wc1302` is the active `0.3.0-wc1302-win1` source port candidate
+  for Windchill 13.0.2.6 build 33, Information Modeler 13.0.2.0 build 396,
+  Java 17 and Jakarta Servlet. A private target CCD JAR/ClassInfo and sql3 DDL
+  candidate exist. Approved grants, target DDL and deployment were applied on
+  one authorized dev/test target; final runtime qualification remains pending.
+
+Keep the 12.1 prebuilt files, manifest and DDL as the historical 0.2.0 baseline.
+The 13.0.2 line now has a separate private target-built JAR, ClassInfo files,
+manifest/model baseline and schema profile. It still requires DBA/runtime
+qualification before release. Never edit fingerprints or use old artifacts to
+bypass a mismatch.
+
+## Active Port Status
+
+The target software profile is verified as Windows x64/local NTFS, Windchill
+13.0.2.6 build 33 with no patches, Information Modeler 13.0.2.0 build 396,
+Corretto 17.0.11.9.1 and Jakarta Servlet. Read-only preflight, target XCONF DTD
+validation, profiler/API checks and the complete offline suite pass. A target
+CCD JAR and seven matching ClassInfo files were generated privately. PTC
+`sql_script` generated eight target `sql3` inputs; a create-only candidate uses
+4 tables, 4 primary keys, 14 secondary indexes and explicit BYTE semantics.
+The private model baseline/manifest passed SDK/datecode verification, and a
+hash-bound 28-file deployment plan was applied from the restricted backup ACL.
+The approved `SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY` grants and target
+CREATE DDL were applied; schema postchecks passed. A later Wex XML-only menu
+repair was also applied and the user reports the menus fixed. An owner restart
+and post-restart acceptance after that repair are not recorded. End-to-end
+capture, monitoring flush and multi-node/failover acceptance remain pending.
+
+The schema owner and PDB were cross-checked against installed DB settings;
+`CREATE TABLE` and an existing `UNLIMITED TABLESPACE` privilege were observed.
+The SCN package probe returned ORA-00904 before fallback/undo checks. A later
+DBA transcript ran as SYSDBA, so it cannot prove MANAGER's effective grants or
+schema inventory. The approved grants `SELECT ON SYS.V_$DATABASE` and
+`ANALYZE ANY` have since been applied. MANAGER's SCN fallback works; V$PARAMETER
+and V$UNDOSTAT remain unavailable, while `DBMS_STATS` execution is PUBLIC.
+Owner-session NLS semantics are BYTE. The target DDL postchecks verified four
+tables, four validated primary keys, 18 valid normal indexes plus three valid
+LOB indexes, and 45 BYTE VARCHAR2 columns. No monitoring flush or real capture
+has been tested. Active Oracle RU, workload undo, index capacity and
+application-node topology remain incomplete.
+
+The first approved CCD attempt failed before Information Modeler was registered;
+the later target build succeeded. All 24 saved ClassInfo/configuration paths
+matched after the prior failed attempt. After the successful build, the owner
+confirmed that the observed `site.xconf` MethodServer-count change was
+intentional; the corresponding propagated `wt.properties` and target-file hints
+were retained, not restored over the site change. The CCD build itself did not
+apply runtime files or restart services; the later deployment plan was applied
+separately. The separate upstream main
+DDL profile targets 13.0.2.11; its compiled artifact is Linux/`com.ptc`, so the
+Windows `com.custom` candidate uses the newly generated target outputs instead.
+
+An offline diff found identical CREATE table/index definitions in the 12.1
+Windows and upstream 13.0.2.11 scripts, with model-package comments differing.
+The actual Windows target DDL now comes from the installed 13.0.2.6 SDK. Its
+45 unqualified `VARCHAR2(n)` widths were made explicit as `VARCHAR2(n BYTE)`;
+all numeric widths stayed unchanged. The approved target DDL was applied and
+the schema postchecks passed. The candidate remains unqualified pending final
+runtime and multi-node acceptance.
 
 The package version, `prebuilt/manifest.json`, release tag, ZIP name and
 qualification record must agree. A source-only documentation change does not
@@ -79,7 +135,11 @@ new reviewed prebuilt baseline has already been created for that target.
 For a new Windchill release:
 
 1. Build with the installed target SDK and CCD/customization tools.
-2. Snapshot and review every generated custom `ClassInfo` file.
+2. Before CCD writes, checksum-back up both known generated `ClassInfo` locations
+  and site, declarations, generated properties and relevant customization XCONF
+  files. The target build records the backup hashes and restores the known
+  ClassInfo locations in its `finally` path. Unexpected configuration changes
+  need site-owner review, not automatic replacement.
 3. Compile all runtime Java against the target release and supported JDK.
 4. Compile all five JSPs and run the complete validation groups.
 5. Generate the target schema DDL from the target model and width/tablespace
@@ -101,7 +161,7 @@ actual target SDK:
 
 | Seam | Required decision |
 |---|---|
-| Java language level | Use the target JDK and `--release`; do not leave Java 17 syntax in a Java 11 port. |
+| Java language level | Use the target JDK and `--release`; this 13.0.2 line requires `--release 17`. The historical 12.1 line uses Java 11. |
 | Servlet namespace | Preserve the namespace provided by the target (`javax` or `jakarta`). |
 | Windchill package identity | Keep the custom persistent identity stable after first installation; a rename is a data migration. |
 | Generated model | Generate ClassInfo and model resources with the target CCD; never copy upstream metadata. |

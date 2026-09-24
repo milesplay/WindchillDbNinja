@@ -7,7 +7,7 @@
       return HTMLEncoder.encodeForHTMLContent(value == null ? "" : value);
    }
 
-   private static void tree(javax.servlet.jsp.JspWriter out,
+   private static void tree(jakarta.servlet.jsp.JspWriter out,
                             java.util.List<SqlEvidencePresentation.Node> nodes) throws java.io.IOException {
       out.write("<ul>");
       for (SqlEvidencePresentation.Node node : nodes) {

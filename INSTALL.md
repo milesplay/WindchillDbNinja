@@ -1,4 +1,23 @@
 # Installation, upgrade and rollback
+## 13.0.2 port status
+
+`0.3.0-wc1302-win1` is a private target candidate for Windchill 13.0.2.6 build
+33, Information Modeler 13.0.2.0 build 396, Java 17 and Jakarta Servlet. A
+target CCD JAR and seven ClassInfo files have been generated privately, along
+with a target sql3-generated explicit-BYTE create-only DDL candidate. The
+active Oracle RU, V$ diagnostics access, workload undo and end-to-end runtime
+behavior remain unqualified. A private target model-baseline/manifest has passed SDK/datecode
+verification. On the authorized development/test target, the approved
+`SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY` grants, target DDL and initial
+hash-bound 28-file deployment plan were applied; schema postchecks passed. A
+later Wex XML-only menu repair was also applied and the user reports the menus
+fixed. An owner restart and post-restart runtime acceptance after that repair
+are not recorded, so this candidate remains unreleased and unqualified. Do not
+replay DDL or plans or restart services without owner approval. The
+checked-in 12.1
+JAR/ClassInfo/manifest/DDL are not valid for this target. These steps remain
+the procedure for a separately approved target, not permission to repeat the
+completed changes on this one.
 
 Read [compatibility](COMPATIBILITY.md), [operations](OPERATIONS.md) and
 [PTC customization mapping](CUSTOMIZATION.md) first.
@@ -50,7 +69,8 @@ approved administrators.
 Clone the [repository](https://github.com/milesplay/WindchillDbNinja) and select
 the reviewed tag, or download the full source/install ZIP and SHA256SUMS from
 [Releases](https://github.com/milesplay/WindchillDbNinja/releases).
-For the 0.1.1 preview, keep the two assets in the same private directory:
+The example below is for the historical 0.2.0 Windows 12.1 package, not the
+current 13.0.2 port candidate:
 
 ```text
 Get-FileHash .\WindchillDbNinja-0.2.0-windows-x64.zip -Algorithm SHA256
@@ -82,7 +102,8 @@ node tools/dbninja.mjs preflight
 ```
 
 Paths are placeholders, not target detection rules. Preflight is read-only and
-checks installed PTC tooling, javax Servlet and service slot 905000.
+checks Windows x64, Java 17, Jakarta Servlet, installed PTC tooling and service
+slot 905000.
 It does not connect to Oracle or authorize an installation. Have a DBA run
 [oracle-check.sql](sql/oracle-check.sql) as the actual Windchill schema using the
 site's approved interactive authentication mechanism. Do not put passwords in a
@@ -121,7 +142,11 @@ Prefer a staging clone, especially after a CPS/major-version update. On a live
 target, coordinate the build with the maintenance window: PTC annotation
 processing can write ClassInfo into the installation. The build command backs up
 and restores the seven known model files in both known output locations, including
-on failure, and retains the new JAR/ClassInfo in the private `build/` directory.
+on failure. Before CCD starts, it also checksum-backs up `site.xconf`,
+`declarations.xconf`, generated properties and relevant custom XCONF/configuration
+files without silently restoring site configuration over concurrent changes.
+Keep the private backup receipt for owner review. The new JAR/ClassInfo remains
+in the private `build/` directory.
 An unknown metadata output location is an error, not permission to use stale files.
 
 ```sh

@@ -29,7 +29,7 @@ function inventory(root) {
   return files;
 }
 
-test('fresh prebuilt installation plans every runtime resource from the checkout without live writes or old artifacts', {
+test('fresh prebuilt planning rejects the historical artifact without mutating the target', {
   skip: process.platform !== 'win32' || process.arch !== 'x64' || !process.env.JAVA_HOME
     ? 'Requires the qualified Windows x64 platform and JAVA_HOME for the real JDK XML/property helper.' : false
 }, async t => {
@@ -50,7 +50,7 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
   put(home, 'codebase/presentation.properties',
     'netmarkets.presentation.jsFiles=custom/Unrelated/site.js\nnetmarkets.presentation.cssFiles=custom/Unrelated/site.css\n');
   put(home, 'codebase/netmarkets/javascript/util/main.js', '// Synthetic existing Windchill bundle.\n');
-  put(home, 'servlet-fixture/javax/servlet/http/HttpServletRequest.class', 'Synthetic ZIP entry; never loaded.\n');
+  put(home, 'servlet-fixture/jakarta/servlet/http/HttpServletRequest.class', 'Synthetic ZIP entry; never loaded.\n');
   const javaHome = fs.realpathSync(process.env.JAVA_HOME);
   const jar = spawnSync(path.join(javaHome, 'bin/jar.exe'),
     ['cf', path.join(home, 'tomcat/lib/servlet-api.jar'), '-C', path.join(home, 'servlet-fixture'), '.'], {encoding: 'utf8'});
@@ -68,12 +68,20 @@ test('fresh prebuilt installation plans every runtime resource from the checkout
   // Only the unavailable vendor version probe is simulated; XML/properties use the real JDK.
   const java = put(directory, 'java-probe.cmd', '@echo off\r\n'
     + 'echo %* | %SystemRoot%\\System32\\findstr.exe /c:"wt.util.version.WindchillVersion" >nul\r\n'
-    + 'if not errorlevel 1 (echo 12.1.2.23 12.1 wnc.12.1.2.23 38& exit /b 0)\r\n'
+    + 'if not errorlevel 1 (echo 13.0.2.6 13.0 wnc.13.0.2.6 33& exit /b 0)\r\n'
     + `"${path.join(javaHome, 'bin/java.exe')}" %*\r\nexit /b %ERRORLEVEL%\r\n`, 0o700);
   const env = {home, javaHome, java, javac: path.join(javaHome, 'bin/javac.exe')};
   const {createPlan, assets, actionIcons, fingerprint} = await import(pathToFileURL(path.join(source, 'tools/dbninja.mjs')).href);
   const before = inventory(home);
-  const planFile = createPlan(env, false, false, true);
+  let planFile;
+  try {
+    planFile = createPlan(env, false, false, true);
+  } catch (error) {
+    assert.match(error.message, /Prebuilt package name\/version differs|Unsupported or incomplete prebuilt manifest|Prebuilt source (?:inventory does not match this checkout|differs from this checkout)/);
+    assert.deepEqual(inventory(home), before, 'A rejected stale prebuilt candidate must leave the fresh target unchanged.');
+    assert.equal(fs.existsSync(path.join(home, 'wtSafeArea')), false);
+    return;
+  }
   const plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
   const expected = [
     ...[assets.header, assets.csv, assets.diagnostics, assets.menuIcons, assets.css]

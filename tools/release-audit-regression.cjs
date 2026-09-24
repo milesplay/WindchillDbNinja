@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..');
 const assets = JSON.parse(fs.readFileSync(path.join(root, 'deployment/assets.json'), 'utf8'));
 const gitAvailable = spawnSync('git', ['--version']).status === 0;
 const documents = ['README.md', 'INSTALL.md', 'HANDOFF.md', 'AGENTS.md',
-  'COMPATIBILITY.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
+  'COMPATIBILITY.md', 'WINDOWS-PORTING.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
   'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md'];
 
 function fixture(t) {
@@ -35,6 +35,25 @@ function copyTool(directory, name) {
       put(directory, `tools/${dependency}`, fs.readFileSync(path.join(__dirname, dependency)));
     }
   }
+}
+
+function privatePlanRoot(directory) {
+  const planRoot = path.join(directory, 'backups', 'private');
+  fs.mkdirSync(planRoot, {recursive: true});
+  const runAcl = args => {
+    const result = spawnSync('icacls.exe', [planRoot, ...args], {encoding: 'utf8'});
+    assert.equal(result.status, 0, result.stderr || result.stdout || 'icacls failed');
+  };
+  const whoami = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/whoami.exe');
+  const identity = spawnSync(whoami, ['/user', '/fo', 'csv', '/nh'], {encoding: 'utf8'});
+  assert.equal(identity.status, 0, identity.stderr || identity.error?.message || 'whoami failed');
+  const userSid = identity.stdout.match(/S-1-5-[0-9-]+/)?.[0];
+  assert.ok(userSid, 'whoami did not return the current user SID');
+  runAcl(['/inheritance:r']);
+  for (const principal of [`*${userSid}`, '*S-1-5-18', '*S-1-5-32-544']) {
+    runAcl(['/grant:r', `${principal}:(OI)(CI)F`]);
+  }
+  return planRoot;
 }
 
 function publicationFixture(t) {
@@ -225,12 +244,13 @@ function rollbackFixture(t) {
     ? '@echo off\r\nif not "%~1"=="--validateassite" exit /b 91\r\necho SIMULATED read-only xconf validation\r\n'
     : '#!/bin/sh\n[ "$1" = "--validateassite" ] || exit 91\nprintf "SIMULATED read-only xconf validation\\n"\n');
   fs.chmodSync(xconf, 0o755);
+  const privateRoot = process.platform === 'win32' ? privatePlanRoot(directory) : null;
   const hash = value => crypto.createHash('sha256').update(value).digest('hex');
   const managed = 'codebase/custom/DbCapture/audit-fixture.js';
   const generated = 'codebase/netmarkets/javascript/util/main.js';
   const prerequisite = 'codebase/netmarkets/jsp/dbcapture/objectDetails.jsp';
-  const backup = path.join(directory, 'owned-backup');
-  const planDirectory = path.join(directory, 'reviewed-plan');
+  const backup = path.join(privateRoot || directory, 'owned-backup');
+  const planDirectory = path.join(privateRoot || directory, 'reviewed-plan');
   const before = {}, after = {}, files = {};
   for (const relative of [managed, `wtSafeArea/siteMod/${managed}`, generated]) {
     put(home, relative, 'after-fixture\n');
@@ -249,12 +269,14 @@ function rollbackFixture(t) {
   const applied = {backup, status: 'static-verified-browser-reload-required', after};
   const planFile = put(planDirectory, 'plan.json', JSON.stringify(plan));
   put(planDirectory, 'applied.json', JSON.stringify(applied));
-  const run = () => spawnSync(process.execPath, [
-    path.join(directory, 'tools/dbninja.mjs'), 'rollback', planFile
-  ], {
-    cwd: directory, encoding: 'utf8',
-    env: {...process.env, WT_HOME: home, JAVA_HOME: javaHome, DBNINJA_MAINTENANCE_APPROVED: 'yes'}
-  });
+  const run = () => {
+    const env = {...process.env, WT_HOME: home, JAVA_HOME: javaHome, DBNINJA_MAINTENANCE_APPROVED: 'yes'};
+    if (privateRoot) env.DBNINJA_PRIVATE_PLAN_ROOT = privateRoot;
+    else delete env.DBNINJA_PRIVATE_PLAN_ROOT;
+    return spawnSync(process.execPath, [path.join(directory, 'tools/dbninja.mjs'), 'rollback', planFile], {
+      cwd: directory, encoding: 'utf8', env
+    });
+  };
   return {home, backup, planDirectory, managed, generated, prerequisite, applied, run};
 }
 
@@ -293,6 +315,7 @@ test('mock JavaScript-only rollback refuses changed non-JavaScript prerequisites
   put(f.home, f.prerequisite, 'independent JSP upgrade\n');
   const result = f.run();
   assert.notEqual(result.status, 0, 'Rollback restored old assets after a non-JavaScript prerequisite changed.');
+  assert.match(result.stderr, /Non-JavaScript prerequisite changed/);
   assert.equal(fs.readFileSync(path.join(f.home, f.generated), 'utf8'), 'after-fixture\n');
 });
 

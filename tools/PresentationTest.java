@@ -33,7 +33,7 @@ import com.ptc.mvc.components.ComponentConfigFactory;
 import com.ptc.mvc.components.TableConfig;
 import com.ptc.netmarkets.util.beans.NmCommandBean;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import wt.fc.ObjectIdentifier;
 import wt.fc.PersistInfo;
 import wt.query.QuerySpec;

@@ -13,7 +13,7 @@ import com.ptc.core.components.rendering.guicomponents.UrlDisplayComponent;
 import com.custom.dbcapture.DbCapturePresentation;
 import com.custom.dbcapture.DbCaptureTableChange;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import wt.fc.PersistenceHelper;
 import wt.util.WTContext;
 import wt.util.WTException;

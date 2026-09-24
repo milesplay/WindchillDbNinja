@@ -4,9 +4,20 @@ This is a **qualification matrix**, not a vendor support matrix. PTC's support
 policy for the underlying Windchill/OS/JDK/Oracle combination still applies.
 Do not install a newer JDK or database release merely because a row below mentions it.
 
-The qualified Windows 12.1 release is `v0.2.0-wc121-win1`. A Windows 13.0.2
-port is a separate target exercise; follow [WINDOWS-PORTING.md](WINDOWS-PORTING.md)
-and do not reuse the 12.1 JAR, ClassInfo files, manifest or generated DDL.
+The qualified Windows 12.1 release remains `v0.2.0-wc121-win1`. The separate
+`port/windows-wc1302` branch is a `0.3.0-wc1302-win1` source candidate. Its
+software profile is verified as Windchill 13.0.2.6 build 33 with Information
+Modeler 13.0.2.0 build 396, Java 17 and Jakarta Servlet. A target CCD JAR and
+seven ClassInfo files, target-generated sql3 DDL and the private
+model-baseline/manifest are retained privately. On the authorized
+development/test target, the approved `SELECT ON SYS.V_$DATABASE` and
+`ANALYZE ANY` grants, target DDL and initial 28-file plan were applied; schema
+postchecks passed. A later Wex XML-only menu repair was also applied and the
+user reports the menus are fixed. An owner restart and post-restart acceptance
+after that repair are not recorded. End-to-end capture, monitoring flush and
+multi-node/failover acceptance remain incomplete, so this candidate is **not
+released or qualified**. Do not reuse the 12.1/Linux binaries or replay target
+changes.
 
 **Development and test environments only. Do not install or run DB Ninja in
 production**, including a technically compatible stack. An unknown environment
@@ -18,7 +29,7 @@ classification must be resolved with the owner before installation or capture.
 |---|---|
 | Windchill Services12.1.2.23 build38 (12.1.2.0 CPS23), Corretto 11.0.19, javax Servlet, Oracle 19c, Windows x64 | Exact first-binary baseline. See [qualification evidence](LOCAL-INSTALL.md); historical icon acceptance is not new source/binary acceptance. |
 | Windchill 13.1.4, Java 21, Oracle 19.3 | Original implementation provenance. This publication revision has not been requalified there. Rebuild with that installation's supported JDK and SDK. |
-| Windchill 13.0.2 on Windows | Not qualified by this release. Use a separate target-build branch and release; verify the target's JDK, Servlet namespace, CCD metadata, XCONF DTD, Oracle profile and runtime behavior. |
+| Windchill 13.0.2.6 build33, Information Modeler 13.0.2.0 build396, Java 17, Jakarta, Windows x64 | Private target candidate; approved grants, target DDL and deployment applied on one dev/test system. Final runtime and multi-node acceptance remain pending. |
 | Other 13.x versions/CPS levels | Conditional candidates, not verified. Rebuild JAR/ClassInfo, compile all JSPs, test profiler integration and run browser acceptance. |
 | Other Windchill 12.x or 13.x/CPS levels | Not qualified by this port. Rebuild JAR/ClassInfo, compile all JSPs, test profiler integration and run browser acceptance. |
 | Traditional on-premises `codebase` directory | Deployment tooling's qualified layout. The owner needs access to PTC Ant, CCD and xconfmanager. |
@@ -44,8 +55,8 @@ JavaScript bundles. [Qualified custom schema DDL](sql/oracle/README.md) is inclu
 separately; it is not portable pre-generated SQL for arbitrary sites. A different
 schema profile requires target generation and DBA review, even with a prebuilt JAR.
 
-The publication build compiles all current runtime Java with the target SDK
-and `--release 11 -proc:none`, retaining only fingerprint-locked custom generated
+The historical 12.1 publication build compiles all current runtime Java with its
+target SDK and `--release 11 -proc:none`, retaining only fingerprint-locked custom generated
 entries and ClassInfo from the previous verified target CCD generation.
 `deployment/generated-model-baseline.json` records the source, generated-entry,
 metadata and SDK fingerprints. This is current-source compilation with unchanged

@@ -12,11 +12,17 @@ runtime. The initial 0.1.0 package was published in commit
 `a6c6dbb189515512db295a08636100a33d7760da`; see [CHANGELOG.md](CHANGELOG.md)
 and [the qualification record](LOCAL-INSTALL.md) for each revision's scope.
 
-The current release line is `v0.2.0-wc121-win1`, based on upstream `v0.1.1`.
-It contains the Windows 12.1 source port, target-qualified custom binary and
-the [Windows porting guide](WINDOWS-PORTING.md). A future Windows 13.0.2 port
-must use a separate branch, target-generated metadata and release line; it is
-not a re-labeling of this package.
+The last qualified release is `v0.2.0-wc121-win1`, based on upstream `v0.1.1`.
+The local `port/windows-wc1302` branch is a `0.3.0-wc1302-win1` source candidate
+for Windchill 13.0.2.6 build 33. A private target CCD JAR, seven ClassInfo
+files, model baseline/manifest, sql3 create-only DDL candidate and 28-file plan
+have been generated and validated. The approved minimal grants, target DDL and
+initial 28-file plan were applied on the authorized development/test target;
+schema postchecks passed. A later Wex XML-only menu repair was applied and the
+user reports the menus fixed. An owner restart and post-restart acceptance
+after that repair are not recorded. The candidate remains unreleased and
+unqualified pending final runtime and multi-node acceptance. Do not publish
+the historical 12.1/Linux artifacts as a Windows 13.0.2 package.
 
 The maintainer verified authenticated repository access and permission to
 push `main`. Preserve remote history and any subsequent contributor changes;
@@ -39,7 +45,7 @@ Use an explicit allowlist, not a wholesale copy of the working directory:
   custom CREATE inputs, the guarded combined script and model/profile checksums.
   The exact profile is Oracle 19c, unchanged Windchill 12.1.2.23 models,
   `wt.db.maxBytesPerChar=3`, explicit BYTE widths and INDX.
-- The exact approved compiled candidate:
+- The historical 0.2.0 compiled candidate:
 
   ```text
   prebuilt/DbCapture.jar
@@ -53,8 +59,8 @@ Check the actual JAR entries and all metadata, not just filenames. Only custom
 classes and custom persistent metadata are authorized; the binary exception is
 not permission to publish arbitrary JARs or serialized files.
 
-Prebuilt assembly uses `tools/build-prebuilt.mjs`: all current runtime Java is
-compiled against the target SDK with `--release 11 -proc:none` into private
+Historical 0.2.0 prebuilt assembly used `tools/build-prebuilt.mjs` to compile
+all current runtime Java against the 12.1 target SDK with `--release 11 -proc:none` into private
 output, then assembled as a fresh module-only JAR, not a stale implementation
 overlay. It retains only 15 fingerprint-locked custom generated entries
 (7 model bases, 3 association classes, 4 English `RB.ser` resources and a listener
@@ -68,7 +74,7 @@ unchanged generated model artifacts, not a new CCD or annotation-processing
 run**. There are no schema/annotation changes or live metadata writes in this
 assembly. A changed model or CPS requires target CCD and a reviewed new baseline.
 
-The exact first-binary baseline is **Windchill Services12.1.2.23 build38
+The exact 0.2.0 first-binary baseline is **Windchill Services12.1.2.23 build38
 (12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64, traditional
 `codebase`**. Other CPS/SDK combinations require rebuild and qualification.
 Windows evidence storage is restricted to the reviewed local-NTFS ACL policy;
@@ -111,6 +117,11 @@ and is separately reviewed/executed by the DBA. There are no automatic grants
 or restarts.
 
 ## Candidate checks and export
+
+The repository's tracked `prebuilt/` directory still contains the historical
+12.1 package and must not be selected for 0.3.0. The newly generated candidate
+package and its manifest are private under the ignored `backups/` directory;
+review that exact candidate before considering any release export.
 
 With the reviewed `WT_HOME` and `JAVA_HOME`:
 

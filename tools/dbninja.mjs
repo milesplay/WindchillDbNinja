@@ -87,15 +87,15 @@ export function describeProperty(env, name) {
   return xconf(env, ['-d', name], true);
 }
 
-export function configuration(env, operation, input, output) {
+export function configuration(env, operation, input, output, ...extra) {
   const directory = path.join(bundle, 'build/tooling');
   const source = path.join(bundle, 'tools/ConfigurationFiles.java');
   const compiled = path.join(directory, 'ConfigurationFiles.class');
   mkdir(directory);
   if (!fs.existsSync(compiled) || fs.statSync(compiled).mtimeMs < fs.statSync(source).mtimeMs) {
-    run(env.javac, ['--release', '11', '-encoding', 'UTF-8', '-Xlint:all', '-Werror', '-d', directory, source], bundle);
+    run(env.javac, ['--release', '17', '-encoding', 'UTF-8', '-Xlint:all', '-Werror', '-d', directory, source], bundle);
   }
-  return run(env.java, ['-cp', directory, 'ConfigurationFiles', operation, input, output], bundle, true);
+  return run(env.java, ['-cp', directory, 'ConfigurationFiles', operation, input, output, ...extra], bundle, true);
 }
 
 function properties(env, relative, keys) {
@@ -145,6 +145,9 @@ function maintenance() {
 
 function preflight(env) {
   if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('Node.js 22 or newer is required.');
+  if (process.platform !== 'win32' || process.arch !== 'x64') {
+    throw new Error('This port requires Windows x64.');
+  }
   for (const relative of ['codebase/wt.properties', 'codebase/presentation.properties',
     'bin/swmaint.xml', 'bin/jsfrag_combine.xml', 'ant/lib/ant-launcher.jar',
     'bin/customizationTools/build.xml', 'tomcat/lib/servlet-api.jar']) {
@@ -153,12 +156,15 @@ function preflight(env) {
   if (fs.existsSync(path.join(env.home, 'codebase.war'))) {
     throw new Error('This package targets the traditional codebase layout; codebase.war requires separate qualification.');
   }
-  run(env.java, ['-version'], bundle);
-  run(env.javac, ['-version'], bundle);
+  const javaVersion = run(env.java, ['--version'], bundle, true);
+  const javacVersion = run(env.javac, ['--version'], bundle, true);
+  if (!/\b17\.\d+/.test(javaVersion) || !/\b17\.\d+/.test(javacVersion)) {
+    throw new Error('Windchill 13.0.2 requires the supported Java 17 JDK.');
+  }
   const jar = path.join(env.javaHome, process.platform === 'win32' ? 'bin/jar.exe' : 'bin/jar');
   const servletClasses = run(jar, ['tf', path.join(env.home, 'tomcat/lib/servlet-api.jar')], bundle, true);
-  if (!servletClasses.includes('javax/servlet/http/HttpServletRequest.class')) {
-    throw new Error('This port requires the Windchill 12.1 javax.servlet API.');
+  if (!servletClasses.includes('jakarta/servlet/http/HttpServletRequest.class')) {
+    throw new Error('This port requires the Windchill 13 Jakarta Servlet API.');
   }
   const current = properties(env, 'codebase/wt.properties', ['wt.services.service.905000', ...settingKeys]);
   if (current['wt.services.service.905000'] && current['wt.services.service.905000'] !== service) {
@@ -167,7 +173,7 @@ function preflight(env) {
   if (current['com.custom.dbcapture.correlateLogs'] === 'true') {
     throw new Error('Legacy SQL correlation is enabled. Review and disable it explicitly before adopting this package.');
   }
-  console.log('PASS: Windows filesystem/toolchain checks. This does NOT verify Oracle privileges, undo, schema or a maintenance window.');
+  console.log('PASS: Windows x64, Java 17, Jakarta Servlet and PTC tool checks. This does NOT verify Oracle privileges, undo, schema or a maintenance window.');
   console.log('Oracle-only: perform the database checks in COMPATIBILITY.md before building/activating.');
   return current;
 }
@@ -178,21 +184,110 @@ function inspectToolchain(env) {
     .map(relative => [relative, fingerprint(confined(env.home, relative))]));
 }
 
+function assertPrivatePlanAcl(directory) {
+  if (process.platform !== 'win32') return;
+  const script = '$ErrorActionPreference = "Stop"; '
+    + '$acl = Get-Acl -LiteralPath $env:DBNINJA_PRIVATE_PLAN_ROOT; '
+    + '$current = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; '
+    + '$owner = ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value; '
+    + 'if ($owner -ne $current) { exit 21 }; '
+    + '$allowed = @($current, "S-1-5-18", "S-1-5-32-544"); '
+    + 'foreach ($rule in $acl.Access) { '
+    + 'if ($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow) { '
+    + 'try { $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { exit 21 }; '
+    + 'if ($sid -notin $allowed) { exit 21 } } }; exit 0';
+  const checked = spawnSync('powershell.exe', ['-NoProfile', '-Command', script], {
+    encoding: 'utf8', env: {...process.env, DBNINJA_PRIVATE_PLAN_ROOT: directory}
+  });
+  if (checked.error || checked.status !== 0) {
+    throw new Error('Private plan directory ACL is not verified; allow only the owner, SYSTEM and Administrators.');
+  }
+}
+
+function planOutputRoot() {
+  if (!process.env.DBNINJA_PRIVATE_PLAN_ROOT) {
+    if (process.platform === 'win32') throw new Error('Set DBNINJA_PRIVATE_PLAN_ROOT below backups before planning.');
+    return path.join(bundle, 'build');
+  }
+  if (process.platform !== 'win32') throw new Error('A private plan root is supported only on Windows targets.');
+  const requestedRoot = path.resolve(process.env.DBNINJA_PRIVATE_PLAN_ROOT);
+  const backups = fs.realpathSync(path.join(bundle, 'backups'));
+  const relativeToBackups = path.relative(backups, requestedRoot);
+  if (!relativeToBackups || relativeToBackups === '..' || relativeToBackups.startsWith(`..${path.sep}`)
+      || path.isAbsolute(relativeToBackups)) {
+    throw new Error('DBNINJA_PRIVATE_PLAN_ROOT must be a dedicated directory below the private backups root.');
+  }
+  const relativeToBundle = path.relative(bundle, requestedRoot).split(path.sep).join('/');
+  confined(bundle, relativeToBundle);
+  const root = fs.realpathSync(requestedRoot);
+  assertPrivatePlanAcl(root);
+  return root;
+}
+
+function wexProfile(env, required = false) {
+  const archive = 'wex/packages/com.wincomplm/wex-deploy/codebase/wex-deploy.jar';
+  const baseline = 'codebase/config/actions/navigation-actionModels.xml';
+  if (!fs.existsSync(confined(env.home, archive))) {
+    if (required) throw new Error('The reviewed Wex deployment module is not installed.');
+    return null;
+  }
+  if (!fs.existsSync(confined(env.home, baseline))) {
+    throw new Error('The current target navigation models are required for Wex compatibility.');
+  }
+  return {[archive]: fingerprint(confined(env.home, archive)), [baseline]: fingerprint(confined(env.home, baseline))};
+}
+
+export function createWexMenuPlan(env) {
+  const current = preflight(env);
+  if (current['wt.services.service.905000'] !== service) throw new Error('Menu-only repair requires the existing DB Ninja installation.');
+  if (!process.env.DBNINJA_PRIVATE_PLAN_ROOT) throw new Error('Set DBNINJA_PRIVATE_PLAN_ROOT below the private backups directory.');
+  const prerequisites = wexProfile(env, true);
+  const relative = 'codebase/config/actions/DbCapture-actionModels.xml';
+  const directory = path.join(planOutputRoot(), `wex-menu-plan-${stamp()}`);
+  mkdir(directory);
+  assertPrivatePlanAcl(directory);
+  const target = confined(path.join(directory, 'siteMod'), relative);
+  mkdir(path.dirname(target));
+  configuration(env, 'wex-resolve', confined(env.home, relative), target,
+    confined(env.home, 'codebase/config/actions/navigation-actionModels.xml'));
+  for (const dependency of ['site.xconf', 'declarations.xconf', 'codebase/wt.properties',
+    'codebase/service.properties', 'codebase/presentation.properties', 'custom/lib/DbCapture.jar',
+    'codebase/config/actions/DbCapture-actions.xml', 'codebase/config/actions/navigation-actionModels.xml',
+    'codebase/config/actions/wex-actionModels.xml', 'codebase/config/actions/wex-actions.xml']) {
+    prerequisites[dependency] = fingerprint(confined(env.home, dependency));
+  }
+  const before = {};
+  for (const location of [relative, `wtSafeArea/siteMod/${relative}`]) {
+    const file = confined(env.home, location);
+    before[location] = {hash: fingerprint(file), mode: fs.existsSync(file) ? fs.statSync(file).mode & 0o777 : null};
+  }
+  const plan = {format: 1, target: env.home, created: new Date().toISOString(), menuOnly: true,
+    toolchain: inspectToolchain(env), files: {[relative]: fingerprint(target)}, before, prerequisites};
+  const file = path.join(directory, 'plan.json');
+  save(file, plan);
+  console.log(`PLAN=${file}`);
+  console.log('Prepared one Wex-compatible menu-model file; no live files changed. Review before apply.');
+  return file;
+}
+
 export function createPlan(env, reuseInstalled = false, javascriptOnly = false, prebuilt = false) {
   if (prebuilt && (reuseInstalled || javascriptOnly)) throw new Error('Choose one artifact source for the plan.');
   const current = preflight(env);
+  const menuProfile = wexProfile(env);
   const candidate = prebuilt ? verifyPrebuiltTarget(env, readPrebuilt(bundle)) : null;
   if (reuseInstalled && current['wt.services.service.905000'] !== service) {
     throw new Error('--reuse-installed is only for an existing DB Ninja installation.');
   }
-  const directory = path.join(bundle, 'build', `plan-${stamp()}`);
+  const directory = path.join(planOutputRoot(), `plan-${stamp()}`);
   mkdir(directory);
+  assertPrivatePlanAcl(directory);
   const siteMod = path.join(directory, 'siteMod');
   const plan = {format: 1, target: env.home, created: new Date().toISOString(),
     reuseInstalled, javascriptOnly, artifactSource: prebuilt ? 'prebuilt' : reuseInstalled ? 'installed' : 'target-build',
     toolchain: inspectToolchain(env), files: {}, before: {}, prerequisites: {}, settings: {},
     presentation: properties(env, 'codebase/presentation.properties',
       ['netmarkets.presentation.jsFiles', 'netmarkets.presentation.cssFiles'])};
+  if (menuProfile) Object.assign(plan.prerequisites, menuProfile);
   if (candidate) {
     plan.prebuiltManifestHash = fingerprint(candidate.manifestFile);
     plan.prebuiltVersion = candidate.manifest.version;
@@ -216,7 +311,16 @@ export function createPlan(env, reuseInstalled = false, javascriptOnly = false, 
   for (const [folder, names] of [
     ['actions', ['DbCapture-actions.xml', 'DbCapture-actionModels.xml']], ['mvc', ['DbCapture-configs.xml']]
   ]) {
-    for (const name of names) add(source(`${moduleRoot}/src_web/config/${folder}/${name}`), `codebase/config/${folder}/${name}`);
+    for (const name of names) {
+      const relative = `codebase/config/${folder}/${name}`;
+      if (menuProfile && name === 'DbCapture-actionModels.xml') {
+        const target = confined(siteMod, relative);
+        mkdir(path.dirname(target));
+        configuration(env, 'wex-resolve', source(`${moduleRoot}/src_web/config/${folder}/${name}`), target,
+          confined(env.home, 'codebase/config/actions/navigation-actionModels.xml'));
+        plan.files[relative] = fingerprint(target);
+      } else add(source(`${moduleRoot}/src_web/config/${folder}/${name}`), relative);
+    }
   }
   const overlay = source(`${clientRoot}/overlay`);
   for (const name of ['dbCaptureAdmin.jsp', 'dbCaptureState.jsp', 'editDescription.jsp',
@@ -298,12 +402,25 @@ export function createPlan(env, reuseInstalled = false, javascriptOnly = false, 
 
 function loadPlan(env, file) {
   const absolute = fs.realpathSync(file);
+  const directory = path.dirname(absolute);
+  if (process.platform === 'win32') {
+    const root = planOutputRoot();
+    const relative = path.relative(root, directory);
+    if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+      throw new Error('Plan directory must be below the verified private plan root.');
+    }
+    assertPrivatePlanAcl(directory);
+  }
   const plan = JSON.parse(fs.readFileSync(absolute, 'utf8'));
   if (plan.format !== 1 || plan.target !== env.home) throw new Error('Plan format/target mismatch.');
+  if (plan.menuOnly && (Object.keys(plan.files).length !== 1
+      || !Object.hasOwn(plan.files, 'codebase/config/actions/DbCapture-actionModels.xml'))) {
+    throw new Error('Menu-only plans may change only the DB Capture action-model file.');
+  }
   for (const [relative, hash] of Object.entries(plan.toolchain)) {
     if (fingerprint(confined(env.home, relative)) !== hash) throw new Error(`PTC tool changed since planning: ${relative}`);
   }
-  return {plan, directory: path.dirname(absolute)};
+  return {plan, directory};
 }
 
 function checkStage(plan, directory) {
@@ -352,6 +469,12 @@ export function verifyPlan(env, planFile) {
       if (fingerprint(confined(env.home, location)) !== hash) throw new Error(`Deployment differs: ${location}`);
     }
   }
+  if (plan.menuOnly) {
+    wexProfile(env, true);
+    console.log('PASS: menu-model stage, live/SafeArea hashes and unchanged prerequisites agree.');
+    console.log('No restart was performed. Ask the owner to restart, then verify the live menus.');
+    return;
+  }
   const presentation = properties(env, 'codebase/presentation.properties',
     ['netmarkets.presentation.jsFiles', 'netmarkets.presentation.cssFiles']);
   if ((presentation['netmarkets.presentation.jsFiles'] || '').split(';').some(value => value.startsWith('custom/DbCapture/'))) {
@@ -385,15 +508,20 @@ export function verifyPlan(env, planFile) {
 
 export function applyPlan(env, planFile) {
   maintenance();
-  if (process.env.DBNINJA_ORACLE_CONFIRMED !== 'yes') {
+  const {plan, directory} = loadPlan(env, planFile);
+  if (!plan.menuOnly && process.env.DBNINJA_ORACLE_CONFIRMED !== 'yes') {
     throw new Error('Oracle prerequisites/schema must be approved: set DBNINJA_ORACLE_CONFIRMED=yes after checking them.');
   }
-  const {plan, directory} = loadPlan(env, planFile);
+  if (plan.menuOnly && process.env.DBNINJA_CAPTURE_IDLE_CONFIRMED !== 'yes') {
+    throw new Error('Confirm authoritative idle capture status before this menu repair.');
+  }
   if (fs.existsSync(path.join(directory, 'applied.json'))) throw new Error('This plan was already attempted. Verify or roll it back; do not replay it.');
   checkBefore(env, plan);
   checkStage(plan, directory);
-  const backup = path.join(bundle, 'backups', `deployment-${stamp()}`);
+  const backupRoot = process.platform === 'win32' ? planOutputRoot() : path.join(bundle, 'backups');
+  const backup = path.join(backupRoot, `deployment-${stamp()}`);
   mkdir(backup);
+  assertPrivatePlanAcl(backup);
   for (const [relative, before] of Object.entries(plan.before)) {
     if (before.hash !== null) copy(confined(env.home, relative), confined(path.join(backup, 'before'), relative));
   }
@@ -423,7 +551,7 @@ export function applyPlan(env, planFile) {
       fs.chmodSync(file, browserAsset ? 0o644 : plan.before[relative].mode ?? 0o644);
     }
     for (const directory of newWebDirectories) fs.chmodSync(directory, 0o755);
-    if (!plan.javascriptOnly) {
+    if (!plan.javascriptOnly && !plan.menuOnly) {
       xconf(env, ['--validateasdecl', path.join(env.home, 'custom/xconf/DbNinja.xconf')]);
       xconf(env, ['-i', 'custom/xconf/DbNinja.xconf']);
       for (const [key, value] of Object.entries(plan.settings)) {
@@ -439,7 +567,7 @@ export function applyPlan(env, planFile) {
     }
     // These are PTC's public Ant targets, not copied/reimplemented PTC code.
     // CSS stays an external XCONF registration; docs and obsolete-file cleanup are unrelated.
-    ant(env, 'bin/jsfrag_combine.xml', ['combine_jsfrag_files', 'compress']);
+    if (!plan.menuOnly) ant(env, 'bin/jsfrag_combine.xml', ['combine_jsfrag_files', 'compress']);
     verifyPlan(env, planFile);
     result.status = plan.javascriptOnly ? 'static-verified-browser-reload-required' : 'disk-verified-restart-required';
   } finally {
@@ -482,20 +610,40 @@ function rollback(env, planFile) {
   console.log('Restored the checksum-guarded file snapshot. No database records were changed. An approved restart/browser check is still required.');
 }
 
+export function snapshotBuildFiles(env, backup, relatives) {
+  const before = {};
+  for (const relative of relatives) {
+    const source = confined(env.home, relative);
+    const hash = fingerprint(source);
+    const mode = hash === null ? null : fs.statSync(source).mode & 0o777;
+    before[relative] = {hash, mode};
+    if (hash !== null) {
+      const saved = confined(backup, `before/${relative}`);
+      copy(source, saved, mode);
+      if (fingerprint(saved) !== hash) throw new Error(`Build backup checksum mismatch: ${relative}`);
+    }
+  }
+  return before;
+}
+
 function build(env) {
   maintenance();
   preflight(env);
-  const backup = path.join(bundle, 'backups', `build-${stamp()}`);
+  const backupRoot = process.platform === 'win32' ? planOutputRoot() : path.join(bundle, 'backups');
+  const backup = path.join(backupRoot, `build-${stamp()}`);
   mkdir(backup);
-  const before = {};
-  for (const base of ['codebase/com/custom/dbcapture', 'custom/ser/com/custom/dbcapture']) {
-    for (const name of metadataNames) {
-      const relative = `${base}/${name}`, file = confined(env.home, relative);
-      before[relative] = {hash: fingerprint(file), mode: fs.existsSync(file) ? fs.statSync(file).mode & 0o777 : null};
-      if (before[relative].hash) copy(file, confined(path.join(backup, 'before'), relative));
-    }
-  }
+  assertPrivatePlanAcl(backup);
+  const before = snapshotBuildFiles(env, backup,
+    ['codebase/com/custom/dbcapture', 'custom/ser/com/custom/dbcapture']
+      .flatMap(base => metadataNames.map(name => `${base}/${name}`)));
   save(path.join(backup, 'metadata-before.json'), before);
+  const configurationBefore = snapshotBuildFiles(env, backup, [
+    'site.xconf', 'declarations.xconf', '.xconf-target-file-hints',
+    'codebase/wt.properties', 'codebase/presentation.properties', 'codebase/service.properties',
+    'codebase/.xconf-target-file-hints', 'custom/xconf/custom.site.xconf',
+    'custom/xconf/custom.declarations.xconf', 'bin/customizationTools/customizationTools.properties'
+  ]);
+  save(path.join(backup, 'configuration-before.json'), configurationBefore);
   const started = Date.now() - 2000;
   try {
     const options = [`-Dwt.customizationSource.dir.path=${path.join(bundle, 'customization')}`];
@@ -522,7 +670,7 @@ function build(env) {
 async function main() {
   const [command, argument, ...extra] = process.argv.slice(2);
   if (extra.length || !['preflight', 'build', 'ddl', 'plan', 'apply', 'verify', 'rollback', 'test'].includes(command)) {
-    throw new Error('Usage: node tools/dbninja.mjs preflight|build|ddl|plan [--prebuilt|--reuse-installed|--javascript-only]|apply PLAN|verify PLAN|rollback PLAN|test');
+    throw new Error('Usage: node tools/dbninja.mjs preflight|build|ddl|plan [--prebuilt|--reuse-installed|--javascript-only|--wex-menus]|apply PLAN|verify PLAN|rollback PLAN|test');
   }
   if (command === 'test') {
     const tests = fs.readdirSync(path.join(bundle, 'tools')).filter(name => name.endsWith('-regression.cjs'));
@@ -546,8 +694,9 @@ async function main() {
     console.log('Generated target DDL only; no SQL was executed. Inspect the generator output before assembling create-only SQL.');
   }
   else if (command === 'plan') {
-    if (argument && !['--prebuilt', '--reuse-installed', '--javascript-only'].includes(argument)) throw new Error('Unknown plan option.');
-    createPlan(env, argument === '--reuse-installed' || argument === '--javascript-only',
+    if (argument && !['--prebuilt', '--reuse-installed', '--javascript-only', '--wex-menus'].includes(argument)) throw new Error('Unknown plan option.');
+    if (argument === '--wex-menus') createWexMenuPlan(env);
+    else createPlan(env, argument === '--reuse-installed' || argument === '--javascript-only',
       argument === '--javascript-only', argument === '--prebuilt');
   } else if (!argument) throw new Error('An explicit reviewed plan.json is required.');
   else if (command === 'apply') applyPlan(env, argument);

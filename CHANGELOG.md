@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.0-wc1302-win1 - Windchill 13.0.2 Windows port candidate (not released)
+
+- Create the separate `port/windows-wc1302` source line from the reviewed 12.1 Windows tag.
+- Port active servlet references and target checks to Java 17 and Jakarta while
+  preserving the `com.custom.dbcapture` persistence identity and Windows safety behavior.
+- Verify Windchill 13.0.2.6 build 33 with Information Modeler 13.0.2.0 build
+  396, the local NTFS volume, target XCONF DTD, service slot and installed
+  profiler/Log4j/request APIs.
+- After Information Modeler installation, target CCD generated a private JAR and
+  seven matching ClassInfo files. The earlier failed compile's 24
+  ClassInfo/configuration snapshots were checksum-verified; owner-confirmed
+  MethodServer-count XCONF propagation was preserved, not restored over.
+- Final CCD JAR: 281,066 bytes, SHA-256
+  `741de4f629900a914450654a262b056191ba024c59e6a457444a823c2eb1ff9e`; refreshed
+  source manifest and model baseline verified against target SDK/datecode.
+- Pass 308 offline regression tests, 285 profiler assertions, 77 presentation
+  assertions, target API linkage, JSP/web compilation, icons and source/candidate
+  contract validation.
+- Generate a private candidate manifest/model baseline verified against the
+  13.0.2.6 SDK/datecode, and target sql3 DDL for 4 tables/4 PKs/14 indexes.
+  Explicit BYTE semantics were added without changing 45 numeric VARCHAR2 widths;
+  combined SQL SHA-256 is `03193942212e190a46a02983259191496e6e944312953bdd290d9fb0c457089a`.
+- Apply the approved `SELECT ON SYS.V_$DATABASE` and `ANALYZE ANY` grants and
+  target CREATE DDL; schema postchecks pass for four tables, four primary keys,
+  18 normal indexes, three LOB indexes and 45 BYTE VARCHAR2 columns.
+- Apply the private hash-bound 28-file deployment plan and later Wex XML-only
+  menu repair. The user reports the menus fixed; an owner restart and
+  post-restart acceptance after that repair are not recorded. A disposable
+  capture, monitoring flush and multi-node/failover acceptance remain pending.
+
 ## 0.2.0-wc121-win1 - Windchill 12.1 Windows port
 
 - Port the runtime and validation suite to Windchill 12.1.2.23, Java 11 and

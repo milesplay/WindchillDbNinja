@@ -39,6 +39,8 @@ test('target Oracle slash scripts retain only module CREATE and exact table comm
       fs.writeFileSync(path.join(directory, `create_${table}_Table.sql`),
         `set echo on\nREM target fixture\nset echo off\nCREATE TABLE ${table} (\n`
         + `idA2A2 NUMBER NOT NULL, description VARCHAR2(1200) DEFAULT 'A; B -- not SQL',\n`
+        + `charDescription VARCHAR2(8 CHAR),\n`
+        + `ncharDescription NVARCHAR2(8),\n`
         + `CONSTRAINT PK_${table} PRIMARY KEY (idA2A2))\n`
         + `STORAGE (INITIAL 20k NEXT 20k PCTINCREASE 0)\nENABLE PRIMARY KEY USING INDEX\n`
         + `TABLESPACE INDX STORAGE (INITIAL 20k NEXT 20k PCTINCREASE 0)\n/\n`
@@ -53,6 +55,14 @@ test('target Oracle slash scripts retain only module CREATE and exact table comm
     assert.equal((sql.match(/COMMENT ON TABLE/g) || []).length, 4);
     assert.match(sql, /DEFAULT 'A; B -- not SQL'/);
     assert.equal((sql.match(/^\/$/gm) || []).length, 1, 'Only the owned PL/SQL precondition uses slash execution');
+    const byteSql = createOnlySql(directory, {explicitByteSemantics: true});
+    assert.equal((byteSql.match(/VARCHAR2\(1200 BYTE\)/g) || []).length, 4,
+      'unqualified PTC target widths gain explicit BYTE semantics without changing numeric widths');
+    assert.equal((byteSql.match(/VARCHAR2\(8 CHAR\)/g) || []).length, 4,
+      'explicit CHAR semantics are not rewritten');
+    assert.equal((byteSql.match(/NVARCHAR2\(8\)/g) || []).length, 4,
+      'NVARCHAR2 national-character widths are not rewritten');
+    assert.match(byteSql, /Explicit BYTE added only to unqualified target sql3 VARCHAR2 widths; numeric lengths unchanged/);
     const tableFile = path.join(directory, `create_${tables[0]}_Table.sql`);
     const original = fs.readFileSync(tableFile, 'utf8');
     for (const extra of [

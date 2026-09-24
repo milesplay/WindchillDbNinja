@@ -62,7 +62,7 @@ export function moduleJarEntries(bytes) {
     }
     if (name.endsWith('.class')
         && (data.length < 8 || data.readUInt32BE(0) !== 0xcafebabe || data.readUInt16BE(4) === 65535
-          || data.readUInt16BE(6) !== 55)) throw new Error('Unsupported module class-file version.');
+          || data.readUInt16BE(6) !== 61)) throw new Error('Unsupported module class-file version.');
     entries.set(name, data);
     offset = next;
   }

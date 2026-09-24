@@ -63,13 +63,10 @@ public final class SessionEvidenceStore {
          PosixFilePermissions.fromString("rwx------");
    private static final Set<PosixFilePermission> FILE_MODE =
          PosixFilePermissions.fromString("rw-------");
-   private static final Set<AclEntryPermission> WRITE_PERMISSIONS = EnumSet.of(
-      AclEntryPermission.WRITE_DATA, AclEntryPermission.APPEND_DATA,
-      AclEntryPermission.WRITE_NAMED_ATTRS, AclEntryPermission.WRITE_ATTRIBUTES,
-      AclEntryPermission.DELETE, AclEntryPermission.DELETE_CHILD,
-      AclEntryPermission.WRITE_ACL, AclEntryPermission.WRITE_OWNER);
+   private static final Set<AclEntryPermission> ACCESS_PERMISSIONS = EnumSet.allOf(AclEntryPermission.class);
    private static final int MAGIC = 0x44424345;
    private static final int VERSION = 1;
+   private static final int PRIVATE_OPEN_RETRIES = 8;
    private static final int MAX_METADATA_BYTES = 262_144;
    private static final int MAX_CATALOG_TABLES = 32_768;
    private static final int MAX_STRING_BYTES = 262_144;
@@ -498,16 +495,16 @@ public final class SessionEvidenceStore {
       view.setOwner(owner);
       List<AclEntry> acl = new ArrayList<AclEntry>();
       addFullControl(acl, owner, directory);
-      addWellKnownFullControl(path, acl, "S-1-5-18", directory);
-      addWellKnownFullControl(path, acl, "S-1-5-32-544", directory);
+      addWellKnownFullControl(path, acl, "NT AUTHORITY\\SYSTEM", directory);
+      addWellKnownFullControl(path, acl, "BUILTIN\\Administrators", directory);
       view.setAcl(acl);
    }
 
-   private static void addWellKnownFullControl(Path path, List<AclEntry> acl, String sid,
-                                                boolean directory) throws IOException {
+   private static void addWellKnownFullControl(Path path, List<AclEntry> acl, String accountName,
+                                               boolean directory) throws IOException {
       try {
          UserPrincipalLookupService lookup = path.getFileSystem().getUserPrincipalLookupService();
-         addFullControl(acl, lookup.lookupPrincipalByName(sid), directory);
+         addFullControl(acl, lookup.lookupPrincipalByName(accountName), directory);
       } catch (java.nio.file.attribute.UserPrincipalNotFoundException ignored) {
          // Some localized Windows providers do not resolve well-known SID strings.
       }
@@ -523,7 +520,7 @@ public final class SessionEvidenceStore {
    private static UserPrincipal currentPrincipal(Path path) throws IOException {
       UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
       UserPrincipal current = lookupCurrentPrincipal(path);
-      if (!owner.equals(current) && !accountName(owner).equals(accountName(current))) {
+      if (!owner.equals(current)) {
          throw new IOException("Evidence files must be owned by the Windchill service account");
       }
       return owner;
@@ -534,12 +531,6 @@ public final class SessionEvidenceStore {
             .lookupPrincipalByName(System.getProperty("user.name"));
    }
 
-   private static String accountName(UserPrincipal principal) {
-      String name = principal.getName().replace('/', '\\');
-      int separator = name.lastIndexOf('\\');
-      return (separator < 0 ? name : name.substring(separator + 1)).toLowerCase(Locale.ROOT);
-   }
-
    private static void checkWindowsPrivate(Path path) throws IOException {
       requireLocalNtfs(path);
       AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class,
@@ -548,18 +539,18 @@ public final class SessionEvidenceStore {
       UserPrincipal owner = currentPrincipal(path);
       Set<UserPrincipal> allowed = new HashSet<UserPrincipal>();
       allowed.add(owner);
-      for (String sid : List.of("S-1-5-18", "S-1-5-32-544")) {
+      for (String accountName : List.of("NT AUTHORITY\\SYSTEM", "BUILTIN\\Administrators")) {
          try {
-            allowed.add(path.getFileSystem().getUserPrincipalLookupService().lookupPrincipalByName(sid));
+            allowed.add(path.getFileSystem().getUserPrincipalLookupService().lookupPrincipalByName(accountName));
          } catch (java.nio.file.attribute.UserPrincipalNotFoundException ignored) {
             // Unresolvable well-known principals cannot authorize another ACE.
          }
       }
       for (AclEntry entry : view.getAcl()) {
          if (entry.type() == AclEntryType.ALLOW
-               && !Collections.disjoint(entry.permissions(), WRITE_PERMISSIONS)
+               && !Collections.disjoint(entry.permissions(), ACCESS_PERMISSIONS)
                && !allowed.contains(entry.principal())) {
-            throw new IOException("Evidence ACL grants write access outside the service/system administrators");
+            throw new IOException("Evidence ACL grants access outside the service account, SYSTEM or Administrators");
          }
       }
       fileIdentity(path);
@@ -579,17 +570,41 @@ public final class SessionEvidenceStore {
    }
 
    private static InputStream openPrivateInput(Path file) throws IOException {
-      checkPrivate(file, false);
-      Object before = fileIdentity(file);
-      InputStream input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS);
-      try {
-         if (!before.equals(fileIdentity(file))) {
-            throw new IOException("Evidence file identity changed while opening");
+      IOException lastRace = null;
+      for (int attempt = 0; attempt < PRIVATE_OPEN_RETRIES; attempt++) {
+         try {
+            checkPrivate(file, false);
+            Object before = fileIdentity(file);
+            InputStream input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS);
+            boolean retry = false;
+            try {
+               checkPrivate(file, false);
+               if (before.equals(fileIdentity(file))) return input;
+               lastRace = new IOException("Evidence file identity changed while opening");
+               retry = true;
+            } catch (IOException e) {
+               if (!missingWithoutFollowingLinks(file)) throw e;
+               lastRace = e;
+               retry = true;
+            }
+            input.close();
+            if (retry) java.util.concurrent.locks.LockSupport.parkNanos(1_000_000L);
+         } catch (IOException | RuntimeException failure) {
+            if (!missingWithoutFollowingLinks(file)) throw failure;
+            lastRace = failure instanceof IOException
+                  ? (IOException) failure : new IOException("Evidence file disappeared while opening", failure);
+            java.util.concurrent.locks.LockSupport.parkNanos(1_000_000L);
          }
-         return input;
-      } catch (IOException | RuntimeException failure) {
-         input.close();
-         throw failure;
+      }
+      throw new IOException("Evidence file changed repeatedly while opening", lastRace);
+   }
+
+   private static boolean missingWithoutFollowingLinks(Path file) throws IOException {
+      try {
+         Files.readAttributes(file, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+         return false;
+      } catch (java.nio.file.NoSuchFileException e) {
+         return true;
       }
    }
 

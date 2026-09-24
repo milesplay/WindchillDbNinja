@@ -53,16 +53,20 @@ export function readPrebuilt(root) {
   }
   const baseline = JSON.parse(fs.readFileSync(confined(root, 'deployment/generated-model-baseline.json'), 'utf8'));
   const target = manifest.target;
+  const build = manifest.build;
+  const supportedBuild = build && build.javaRelease === 17
+    && ((build.method === 'target-sdk-javac-with-matching-generated-models' && build.annotationProcessing === false)
+      || (build.method === 'target-ccd' && build.annotationProcessing === true));
   if (manifest.schemaVersion !== 1 || manifest.package !== 'windchill-db-ninja'
       || typeof manifest.version !== 'string' || !/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(manifest.version)
-      || !target || target.os !== 'win32' || target.arch !== 'x64' || target.javaMajor !== 11
-      || target.oracleMajor !== 19 || target.servlet !== 'javax'
+      || !target || target.os !== 'win32' || target.arch !== 'x64' || target.javaMajor !== 17
+      || target.oracleMajor !== 19 || target.servlet !== 'jakarta'
       || target.layout !== 'traditional-codebase' || !/^\d+\.\d+\.\d+\.\d+$/.test(target.windchill || '')
+      || (target.windchill.startsWith('13.0.2.')
+        && (!Number.isSafeInteger(target.windchillBuild) || target.windchillBuild < 1))
       || !manifest.artifacts || !manifest.sources || !manifest.sdk
-      || !manifest.build || manifest.build.javaRelease !== 11
-      || manifest.build.method !== 'target-sdk-javac-with-matching-generated-models'
-      || manifest.build.annotationProcessing !== false
-      || manifest.build.generatedModelBaselineSha256 !== fingerprint(confined(root, 'deployment/generated-model-baseline.json'))) {
+      || !supportedBuild
+      || build.generatedModelBaselineSha256 !== fingerprint(confined(root, 'deployment/generated-model-baseline.json'))) {
     throw new Error('Unsupported or incomplete prebuilt manifest.');
   }
   if (JSON.stringify(Object.keys(manifest.artifacts).sort()) !== JSON.stringify([...prebuiltFiles].sort())
@@ -151,9 +155,13 @@ export function verifyPrebuiltTarget(env, candidate) {
     path.join(env.home, 'lib/*'), path.join(env.home, 'srclib/*')].join(path.delimiter);
   const release = execute(env.java, [`-Dwt.home=${env.home}`, '-cp', classpath,
     'wt.util.version.WindchillVersion'], env.home);
-  const releases = [...release.matchAll(/\bwnc\.([0-9]+(?:\.[0-9]+){3})\b/g)].map(match => match[1]);
-  if (releases.length !== 1 || releases[0] !== manifest.target.windchill) {
+  const releases = [...release.matchAll(/\bwnc\.([0-9]+(?:\.[0-9]+){3})\s+([0-9]+)\b/g)];
+  if (releases.length !== 1 || releases[0][1] !== manifest.target.windchill) {
     throw new Error('Prebuilt Windchill support datecode mismatch; rebuild for the actual release/CPS.');
+  }
+  if (manifest.target.windchillBuild !== undefined
+      && Number(releases[0][2]) !== manifest.target.windchillBuild) {
+    throw new Error('Prebuilt Windchill build number mismatch; rebuild for the exact target build.');
   }
   return candidate;
 }
@@ -168,7 +176,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const home = fs.realpathSync(process.env.WT_HOME), javaHome = fs.realpathSync(process.env.JAVA_HOME);
     const candidate = verifyPrebuiltTarget({home, java: path.join(javaHome, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')},
       readPrebuilt(root));
-    console.log(`PASS: module-only prebuilt ${candidate.manifest.version}; Windows x64, Windchill ${candidate.manifest.target.windchill}, Java 11.`);
+    console.log(`PASS: module-only prebuilt ${candidate.manifest.version}; Windows x64, Windchill ${candidate.manifest.target.windchill}, Java 17.`);
     console.log('Oracle privileges/schema/undo, non-production classification and maintenance approval still require target review.');
   } catch (error) {
     console.error(`ERROR: ${error.message}`);

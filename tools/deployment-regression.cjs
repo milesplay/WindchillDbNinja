@@ -25,6 +25,27 @@ function put(directory, relative, text) {
   return file;
 }
 
+function privatePlanDirectory(label, publicRead = false) {
+  const backups = path.join(root, 'backups');
+  fs.mkdirSync(backups, {recursive: true});
+  const directory = fs.mkdtempSync(path.join(backups, `deployment-test-${label}-`));
+  const runAcl = args => {
+    const result = spawnSync('icacls.exe', [directory, ...args], {encoding: 'utf8'});
+    assert.equal(result.status, 0, result.stderr || result.stdout || 'icacls failed');
+  };
+  const whoami = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/whoami.exe');
+  const identity = spawnSync(whoami, ['/user', '/fo', 'csv', '/nh'], {encoding: 'utf8'});
+  assert.equal(identity.status, 0, identity.stderr || identity.error?.message || 'whoami failed');
+  const userSid = identity.stdout.match(/S-1-5-[0-9-]+/)?.[0];
+  assert.ok(userSid, 'whoami did not return the current user SID');
+  runAcl(['/inheritance:r']);
+  for (const principal of [`*${userSid}`, '*S-1-5-18', '*S-1-5-32-544']) {
+    runAcl(['/grant:r', `${principal}:(OI)(CI)F`]);
+  }
+  if (publicRead) runAcl(['/grant:r', '*S-1-1-0:(OI)(CI)R']);
+  return directory;
+}
+
 test('jsfrag initializes after load, survives late loading and never installs a second controller', async () => {
   const {createJsfrag} = await api;
   const code = createJsfrag('window.headerLoads++; window.DbCaptureHeader = {initialize:function(){window.starts++;}};',
@@ -84,6 +105,29 @@ test('paths reject traversal, absolute paths and symlink escapes', async () => {
   }
 });
 
+test('CCD backup snapshots generated metadata and configuration before a target build', async () => {
+  const {fingerprint, snapshotBuildFiles} = await api;
+  const directory = temp();
+  const home = path.join(directory, 'target');
+  const backup = path.join(directory, 'private-backup');
+  try {
+    const metadata = 'codebase/com/custom/dbcapture/DbCaptureSession.ClassInfo.ser';
+    const configuration = 'codebase/wt.properties';
+    put(home, metadata, 'original model');
+    put(home, configuration, 'original configuration');
+    const before = snapshotBuildFiles({home}, backup, [metadata, configuration, 'site.xconf']);
+    for (const relative of [metadata, configuration]) {
+      assert.equal(before[relative].hash, fingerprint(path.join(home, relative)));
+      assert.equal(fingerprint(path.join(backup, 'before', relative)), before[relative].hash);
+    }
+    assert.deepEqual(before['site.xconf'], {hash: null, mode: null});
+    put(home, metadata, 'CCD generated a new model');
+    assert.equal(fingerprint(path.join(backup, 'before', metadata)), before[metadata].hash);
+  } finally {
+    fs.rmSync(directory, {recursive: true});
+  }
+});
+
 test('clean declarative defaults contain no site-specific example/security configuration', () => {
   const xconf = fs.readFileSync(path.join(root, 'deployment/DbNinja.xconf'), 'utf8');
   assert.doesNotMatch(xconf, /ConfigurableLink|SecurityLabel|netmarkets.presentation.jsFiles/);
@@ -94,6 +138,108 @@ test('clean declarative defaults contain no site-specific example/security confi
   const ccd = fs.readFileSync(path.join(root, 'customization/configurations/xconf/custom.site.xconf'), 'utf8');
   assert.doesNotMatch(ccd, /<Property|<AddToProperty|<ConfigurationRef/);
 });
+
+test('header and Site action models explicitly merge with OOTB navigation', () => {
+  const models = fs.readFileSync(path.join(root,
+    'customization/DbCapture/main/src_web/config/actions/DbCapture-actionModels.xml'), 'utf8');
+  for (const name of ['header actions', 'site navigation']) {
+    assert.match(models, new RegExp(`<model name="${name}" incremental="true">`));
+  }
+  assert.doesNotMatch(models, /<model name="(?:header actions|site navigation)" incremental=""/);
+});
+
+test('Wex profile removes only owned menu shadows and refuses destructive output',
+  {skip: !hasJava && 'Set JAVA_HOME to run Wex profile checks.'}, async () => {
+    const {configuration, fingerprint} = await api;
+    const directory = temp();
+    const env = javaEnvironment();
+    try {
+      const sourceFile = path.join(root,
+        'customization/DbCapture/main/src_web/config/actions/DbCapture-actionModels.xml');
+      const source = fs.readFileSync(sourceFile, 'utf8');
+      const before = fingerprint(sourceFile);
+      const fixture = source.replace('</actionmodels>',
+        '<model name="other tools"><action name="otherAction" type="other"/></model></actionmodels>');
+      const input = put(directory, 'models.xml', fixture);
+      const output = path.join(directory, 'wex-models.xml');
+      configuration(env, 'wex-models', input, output);
+      const result = fs.readFileSync(output, 'utf8');
+      assert.doesNotMatch(result, /<model\b[^>]*name="(?:header actions|site navigation)"/);
+      assert.match(result, /name="dbcapture session table toolbar"/);
+      assert.match(result, /name="dbcapture change table toolbar"/);
+      assert.match(result, /name="other tools"/);
+      for (const action of ['editDbCaptureDescription', 'deleteDbCaptureSession',
+        'exportDbCaptureChangesCsv', 'otherAction']) assert.match(result, new RegExp(`name="${action}"`));
+      assert.equal((result.match(/<model\b/g) || []).length, 3);
+      assert.equal(fingerprint(sourceFile), before);
+      assert.throws(() => configuration(env, 'wex-models', input, output), /failed/);
+      assert.equal(fs.readFileSync(output, 'utf8'), result);
+      for (const [name, invalid] of [
+        ['foreign-action', fixture.replace('name="startDbCapture"', 'name="siteSpecific"')],
+        ['model-filter', fixture.replace('name="header actions"', 'name="header actions" resourceBundle="other"')],
+        ['action-attribute', fixture.replace('name="startDbCapture"', 'name="startDbCapture" shortcut="true"')],
+        ['inline-action', fixture.replace(/(<action name="startDbCapture"[\s\S]*?)\/>/,
+          '$1><includeFilter name="siteFilter"/></action>')],
+        ['missing-model', fixture.replace('name="site navigation"', 'name="other navigation"')],
+        ['duplicate-model', fixture.replace('</actionmodels>',
+          '<model name="site navigation" incremental="true"><action name="dbCaptureAdmin" type="dbcapture"/></model></actionmodels>')]
+      ]) {
+        const invalidInput = put(directory, `${name}.xml`, invalid);
+        const invalidOutput = path.join(directory, `${name}-output.xml`);
+        assert.throws(() => configuration(env, 'wex-models', invalidInput, invalidOutput), /failed/);
+        assert.equal(fs.existsSync(invalidOutput), false);
+      }
+    } finally {
+      fs.rmSync(directory, {recursive: true});
+    }
+  });
+
+test('resolved Wex models preserve current standard and third-party actions without incremental loading',
+  {skip: !hasJava && 'Set JAVA_HOME to run Wex model resolution checks.'}, async () => {
+    const {configuration, fingerprint} = await api;
+    const directory = temp();
+    const env = javaEnvironment();
+    try {
+      const source = path.join(root, 'customization/DbCapture/main/src_web/config/actions/DbCapture-actionModels.xml');
+      const baseline = put(directory, 'navigation.xml', '<actionmodels resourceBundle="fixtureBundle">'
+        + '<model name="header actions"><submodel name="help"/><action name="clipboard" type="netmarkets"/>'
+        + '<action name="separator" type="separator"/><action name="settings" type="user"/>'
+        + '<action name="otherHeader" type="thirdparty"/></model>'
+        + '<model name="site navigation"><action name="listFiles" type="site"/>'
+        + '<action name="listUtilities" type="site"/><action name="otherSite" type="thirdparty"/></model></actionmodels>');
+      const before = fingerprint(baseline);
+      const output = path.join(directory, 'resolved.xml');
+      configuration(env, 'wex-resolve', source, output, baseline);
+      const result = fs.readFileSync(output, 'utf8');
+      for (const name of ['help', 'clipboard', 'settings', 'otherHeader', 'listFiles', 'listUtilities', 'otherSite',
+        'startDbCapture', 'stopDbCapture', 'dbCaptureAdmin', 'editDbCaptureDescription',
+        'deleteDbCaptureSession', 'exportDbCaptureChangesCsv']) {
+        assert.equal((result.match(new RegExp(`name="${name}"`, 'g')) || []).length, 1, name);
+      }
+      assert.doesNotMatch(result, /<model\b[^>]*\bincremental=/);
+      assert.match(result, /DOCTYPE actionmodels SYSTEM "actionmodels.dtd"/);
+      assert.doesNotMatch(result, /<action\b[^>]*\binsertAfter/);
+      assert.ok(result.indexOf('name="clipboard"') < result.indexOf('name="startDbCapture"'));
+      assert.ok(result.indexOf('name="startDbCapture"') < result.indexOf('name="stopDbCapture"'));
+      assert.ok(result.indexOf('name="stopDbCapture"') < result.indexOf('name="settings"'));
+      assert.ok(result.indexOf('name="listUtilities"') < result.indexOf('name="dbCaptureAdmin"'));
+      assert.equal((result.match(/resourceBundle="fixtureBundle"/g) || []).length, 2);
+      assert.equal(fingerprint(baseline), before);
+      const missingAnchor = put(directory, 'missing-anchor.xml', fs.readFileSync(baseline, 'utf8')
+        .replace('name="clipboard"', 'name="renamedClipboard"'));
+      assert.throws(() => configuration(env, 'wex-resolve', source,
+        path.join(directory, 'invalid.xml'), missingAnchor), /failed/);
+      assert.equal(fs.existsSync(path.join(directory, 'invalid.xml')), false);
+      const updated = put(directory, 'updated.xml', fs.readFileSync(baseline, 'utf8')
+        .replace('name="listFiles"', 'name="newReleaseAction"'));
+      const regenerated = path.join(directory, 'regenerated.xml');
+      configuration(env, 'wex-resolve', source, regenerated, updated);
+      assert.match(fs.readFileSync(regenerated, 'utf8'), /name="newReleaseAction"/);
+      assert.doesNotMatch(fs.readFileSync(regenerated, 'utf8'), /name="listFiles"/);
+    } finally {
+      fs.rmSync(directory, {recursive: true});
+    }
+  });
 
 test('XML merges preserve unrelated nodes, comments, Unicode and exact site values',
   {skip: !hasJava && 'Set JAVA_HOME to run JDK XML integration checks.'}, async () => {
@@ -148,7 +294,14 @@ test('planning stages the complete additive package without changing the target;
     const env = {...javaEnvironment(), home: directory};
     const originalApproval = process.env.DBNINJA_MAINTENANCE_APPROVED;
     const originalOracle = process.env.DBNINJA_ORACLE_CONFIRMED;
+    const originalPlanRoot = process.env.DBNINJA_PRIVATE_PLAN_ROOT;
+    let privatePlanRoot;
+    let publicPlanRoot;
     try {
+      if (process.platform === 'win32') {
+        privatePlanRoot = privatePlanDirectory('private');
+        publicPlanRoot = privatePlanDirectory('public', true);
+      }
       put(directory, 'codebase/wt.properties',
         'wt.services.service.905000=com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService\n'
         + 'com.custom.dbcapture.maxRowsPerTable=321\ncom.custom.dbcapture.correlateLogs=false\n');
@@ -167,12 +320,23 @@ test('planning stages the complete additive package without changing the target;
       const names = ['DbCaptureAttrDelta', 'DbCaptureChange', 'DbCaptureSession', 'DbCaptureTableChange',
         'DbCaptureChangeDeltaLink', 'DbCaptureSessionChangeLink', 'DbCaptureSessionTableLink'];
       for (const name of names) put(directory, `codebase/com/custom/dbcapture/${name}.ClassInfo.ser`, 'fixture');
-      put(directory, 'servlet-fixture/javax/servlet/http/HttpServletRequest.class', 'fixture');
+      put(directory, 'servlet-fixture/jakarta/servlet/http/HttpServletRequest.class', 'fixture');
       fs.mkdirSync(path.join(directory, 'tomcat/lib'), {recursive: true});
       const jar = spawnSync(path.join(env.javaHome, `bin/jar${exe}`),
         ['cf', path.join(directory, 'tomcat/lib/servlet-api.jar'), '-C', path.join(directory, 'servlet-fixture'), '.']);
       assert.equal(jar.status, 0);
       const original = fingerprint(path.join(directory, 'codebase/wt.properties'));
+      if (process.platform === 'win32') {
+        delete process.env.DBNINJA_PRIVATE_PLAN_ROOT;
+        assert.throws(() => createPlan(env, true), /DBNINJA_PRIVATE_PLAN_ROOT/);
+        process.env.DBNINJA_PRIVATE_PLAN_ROOT = publicPlanRoot;
+        assert.throws(() => createPlan(env, true), /ACL is not verified/);
+      }
+      process.env.DBNINJA_PRIVATE_PLAN_ROOT = path.join(root, 'build', 'unrestricted-plan-output');
+      assert.throws(() => createPlan(env, true), /below the private backups root/);
+      if (process.platform === 'win32') process.env.DBNINJA_PRIVATE_PLAN_ROOT = privatePlanRoot;
+      else if (originalPlanRoot === undefined) delete process.env.DBNINJA_PRIVATE_PLAN_ROOT;
+      else process.env.DBNINJA_PRIVATE_PLAN_ROOT = originalPlanRoot;
       planFile = createPlan(env, true);
       assert.equal(fingerprint(path.join(directory, 'codebase/wt.properties')), original);
       assert.equal(fs.existsSync(path.join(directory, 'wtSafeArea')), false);
@@ -226,7 +390,11 @@ test('planning stages the complete additive package without changing the target;
       else process.env.DBNINJA_MAINTENANCE_APPROVED = originalApproval;
       if (originalOracle === undefined) delete process.env.DBNINJA_ORACLE_CONFIRMED;
       else process.env.DBNINJA_ORACLE_CONFIRMED = originalOracle;
+      if (originalPlanRoot === undefined) delete process.env.DBNINJA_PRIVATE_PLAN_ROOT;
+      else process.env.DBNINJA_PRIVATE_PLAN_ROOT = originalPlanRoot;
       if (planFile) fs.rmSync(path.dirname(planFile), {recursive: true});
+      if (privatePlanRoot) fs.rmSync(privatePlanRoot, {recursive: true, force: true});
+      if (publicPlanRoot) fs.rmSync(publicPlanRoot, {recursive: true, force: true});
       fs.rmSync(directory, {recursive: true});
     }
   });

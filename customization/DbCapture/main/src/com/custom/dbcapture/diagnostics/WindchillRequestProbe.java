@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.security.Principal;
 
 /**
- * Uses APIs verified in the installed Windchill 12.1 / Java 11 classes.
+ * Uses APIs verified in the installed Windchill 13.0.2 / Java 17 classes.
  * Reflection avoids an extra compile-time dependency on the server-only WtJmxServlet jar.
  * No database call, MethodContext creation, monitor configuration, or principal lookup is performed.
  */
@@ -34,8 +34,8 @@ final class WindchillRequestProbe implements SqlEvidenceCapture.RequestProbe {
    WindchillRequestProbe() throws ReflectiveOperationException {
       ClassLoader loader = WindchillRequestProbe.class.getClassLoader();
       Class<?> servletState = Class.forName("wt.servlet.ServletState", false, loader);
-      Class<?> servletRequestClass = Class.forName("javax.servlet.ServletRequest", false, loader);
-      httpRequestClass = Class.forName("javax.servlet.http.HttpServletRequest", false, loader);
+      Class<?> servletRequestClass = Class.forName("jakarta.servlet.ServletRequest", false, loader);
+      httpRequestClass = Class.forName("jakarta.servlet.http.HttpServletRequest", false, loader);
       Class<?> requestClass = Class.forName("wt.servlet.Request", false, loader);
       Class<?> methodContextClass = Class.forName("wt.method.MethodContext", false, loader);
       Class<?> contextMBean = Class.forName("wt.method.MethodContextMBean", false, loader);

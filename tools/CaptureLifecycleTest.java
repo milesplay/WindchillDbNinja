@@ -311,8 +311,8 @@ public final class CaptureLifecycleTest {
       StringWriter messages = new StringWriter();
       try (var files = compiler.getStandardFileManager(null, null, null)) {
          boolean compiled = compiler.getTask(messages, files, null,
-               List.of("--release", "11", "-proc:none", "-encoding", "UTF-8",
-                     "-classpath", System.getProperty("java.class.path"), "-d", mocks.toString()),
+               List.of("--release", "17", "-proc:none", "-encoding", "UTF-8",
+                  "-classpath", System.getProperty("java.class.path"), "-d", mocks.toString()),
                null, sources).call();
          if (!compiled) throw new AssertionError(messages.toString());
       }
