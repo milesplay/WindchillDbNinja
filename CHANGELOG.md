@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Documentation only: add [WINDOWS-MANUAL-INSTALL.md](WINDOWS-MANUAL-INSTALL.md),
+  a beginner walk-through for the `v0.2.0-wc121-win1` tag that downloads the
+  package in a browser, compiles with CCD in the Windchill shell and deploys by
+  hand with PTC tools, Command Prompt and SQL*Plus. It has not been run
+  end-to-end on a Windows server.
+
 ## 0.2.0-wc121-win1 - Windchill 12.1 Windows port
 
 - Port the runtime and validation suite to Windchill 12.1.2.23, Java 11 and

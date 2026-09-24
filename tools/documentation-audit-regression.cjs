@@ -10,7 +10,7 @@ const englishDocs = [
   'README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'CUSTOMIZATION.md',
   'OPERATIONS.md', 'HANDOFF.md', 'PUBLICATION.md', 'LOCAL-INSTALL.md',
   'USE-CASES.md', 'THIRD-PARTY-NOTICES.md', 'CHANGELOG.md', 'sql/oracle/README.md', 'DATABASE-SETUP.md',
-  'WINDOWS-PORTING.md',
+  'WINDOWS-PORTING.md', 'WINDOWS-MANUAL-INSTALL.md',
 ];
 const packageDocs = ['README.md', 'INSTALL.md', 'COMPATIBILITY.md', 'AGENTS.md', 'HANDOFF.md', 'PUBLICATION.md'];
 
@@ -39,7 +39,7 @@ for (const name of englishDocs) {
   });
 }
 
-for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md', 'DATABASE-SETUP.md']) {
+for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md', 'DATABASE-SETUP.md', 'WINDOWS-MANUAL-INSTALL.md']) {
   test(`${name}: deployment guidance explicitly prohibits production use`, () => {
     const text = prose(name);
     assert.match(text, /development and test environments only/i);

@@ -12,7 +12,7 @@ const documents = ['README.md', 'INSTALL.md', 'HANDOFF.md', 'AGENTS.md',
   'COMPATIBILITY.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
   'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md',
   'WINDOWS-PORTING.md'];
-const optionalDocuments = ['THIRD-PARTY-NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md'];
+const optionalDocuments = ['THIRD-PARTY-NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md', 'WINDOWS-MANUAL-INSTALL.md'];
 const rootFiles = new Set(['.gitignore', '.gitattributes', 'package.json', 'LICENSE', ...documents]);
 const publicDirectories = ['customization/DbCapture', 'customization/configurations', 'deployment', 'tools', 'sql'];
 const excludedRoots = new Set(['backups', 'build', '.git']);

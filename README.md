@@ -201,6 +201,7 @@ after updates. See [CUSTOMIZATION.md](CUSTOMIZATION.md).
 | Document | Purpose |
 |---|---|
 | [INSTALL.md](INSTALL.md) | Windows target-build/prebuilt routes, first install versus update, rollback |
+| [WINDOWS-MANUAL-INSTALL.md](WINDOWS-MANUAL-INSTALL.md) | Beginner walk-through: browser download, CCD compile in the Windchill shell, manual deployment and verification with Command Prompt and SQL*Plus |
 | [WINDOWS-PORTING.md](WINDOWS-PORTING.md) | Versioned Windows porting, 13.0.2 workflow, failure modes and bot checklist |
 | [DATABASE-SETUP.md](DATABASE-SETUP.md) | AI/DBA workflow for schema grants, quotas, CREATE DDL and verification |
 | [Oracle schema](sql/oracle/README.md) | Bundled table/index DDL, exact profile, integrity and DBA execution checks |
