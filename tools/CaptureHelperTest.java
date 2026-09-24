@@ -1,6 +1,6 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
-import com.ptc.dbcapture.engine.CapturedChange;
+import com.custom.dbcapture.engine.CapturedChange;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

@@ -136,10 +136,11 @@ test('width qualification requires exactly one declared value and the same propa
   assert.throws(() => verifySchemaWidth('unrecognized output', propagated('3')), /requires declared/);
 });
 
-test('DDL source symlinks cannot substitute files outside the reviewed package', {skip: process.platform === 'win32'}, async t => {
-  const {readSchemaPackage, schemaInputs} = await api;
-  const f = await fixture(t), file = path.join(f.directory, schemaInputs[0]);
-  fs.unlinkSync(file);
-  fs.symlinkSync(path.join(root, schemaInputs[0]), file);
+test('DDL source links cannot substitute files outside the reviewed package', async t => {
+  const {readSchemaPackage} = await api;
+  const f = await fixture(t), directory = path.join(f.directory, 'sql/oracle/ddl');
+  const outside = path.join(f.directory, 'outside-ddl');
+  fs.renameSync(directory, outside);
+  fs.symlinkSync(outside, directory, process.platform === 'win32' ? 'junction' : 'dir');
   assert.throws(() => readSchemaPackage(f.directory), /symbolic/);
 });

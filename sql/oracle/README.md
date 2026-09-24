@@ -34,13 +34,13 @@ infrastructure remains a prerequisite; do not create a substitute schema.
 
 | Setting | Required profile |
 |---|---|
-| Windchill | Services 13.0.2.11 build32 / 13.0.2.0 CPS11, unchanged generated-model baseline |
+| Windchill | Services 12.1.2.23 build32 / 12.1.2.0 CPS23, unchanged generated-model baseline |
 | Database | Oracle 19c; actual RU, PDB and Windchill schema confirmed by the DBA |
 | `wt.db.maxBytesPerChar` | **3**, in both the XCONF declaration and propagated properties |
 | Strings | Explicit `VARCHAR2(n BYTE)`; widths from PTC's `sql3` generation, including 4000-byte caps |
 | Data tables | The Windchill schema's approved default permanent tablespace |
 | Primary-key and secondary indexes | Approved, online permanent tablespace **INDX**, with adequate quota/space |
-| Application binary | Qualified Linux x64 / Java 17 prebuilt package; see [compatibility](../../COMPATIBILITY.md) |
+| Application binary | Qualified Windows x64 / Java 11 prebuilt package; see [compatibility](../../COMPATIBILITY.md) |
 
 The original custom-generated scripts were normalized only from CRLF to LF and
 from implicit `VARCHAR2(n)` to explicit `VARCHAR2(n BYTE)`. Explicit BYTE avoids

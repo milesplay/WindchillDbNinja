@@ -1,7 +1,7 @@
-package com.ptc.dbcapture.engine;
+package com.custom.dbcapture.engine;
 
-import com.ptc.dbcapture.DbCaptureSearch;
-import com.ptc.dbcapture.DbCaptureSettings;
+import com.custom.dbcapture.DbCaptureSearch;
+import com.custom.dbcapture.DbCaptureSettings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

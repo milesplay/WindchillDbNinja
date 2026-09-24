@@ -7,9 +7,10 @@
   the standard popup shape used across the product and it works predictably.
 --%><%@ taglib uri="http://www.ptc.com/windchill/taglib/components" prefix="jca"%>
 <%@ taglib uri="http://www.ptc.com/windchill/taglib/wrappers" prefix="w"%>
-<%@ page import="com.ptc.dbcapture.DbCaptureAuthorization"%>
-<%@ page import="com.ptc.dbcapture.DbCaptureHelper"%>
-<%@ page import="com.ptc.dbcapture.DbCaptureSession"%>
+<%@ page import="com.custom.dbcapture.DbCaptureAuthorization"%>
+<%@ page import="com.custom.dbcapture.DbCaptureHelper"%>
+<%@ page import="com.custom.dbcapture.DbCaptureSession"%>
+<%@ page import="com.ptc.core.appsec.CSRFProtector"%>
 <%@ page import="com.ptc.netmarkets.model.NmOid"%>
 <%--
   wt.util.HTMLEncoder has no encode(String). The methods are
@@ -18,6 +19,16 @@
   value lands, and note that the wrong name fails the whole JSP at compile
   time, not just the one expression.
 --%><%@ page import="wt.util.HTMLEncoder"%>
+
+<%
+   try {
+      DbCaptureAuthorization.requireAdministrator();
+   } catch (wt.util.WTException authorizationFailure) {
+      response.sendError(403);
+      return;
+   }
+   String dbcCsrfNonce = CSRFProtector.getNonce(request);
+%>
 
 <%@ include file="/netmarkets/jsp/util/beginPopup.jspf"%>
 
@@ -72,7 +83,7 @@
    } catch (Exception e) {
       problem = e.getMessage() == null ? e.toString() : e.getMessage();
       org.apache.logging.log4j.LogManager
-         .getLogger("com.ptc.dbcapture.editDescription")
+         .getLogger("com.custom.dbcapture.editDescription")
          .error("Could not resolve the capture selected for description editing.", e);
    }
 %>
@@ -102,6 +113,7 @@
    var DBC_CAPTURE_ID = "<%=HTMLEncoder.encodeForJavascript(captureId)%>";
    var DBC_SESSION_OID = "<%=sessionOid%>";
    var DBC_ENDPOINT = "netmarkets/jsp/dbcapture/dbCaptureState.jsp";
+   var DBC_CSRF_NONCE = "<%=HTMLEncoder.encodeForJavascript(dbcCsrfNonce)%>";
    var dbcSaving = false;
    var dbcSaved = false;
 
@@ -184,7 +196,8 @@
       };
       req.send("op=describe&sessionOid=" + encodeURIComponent(DBC_SESSION_OID)
              + "&captureId=" + encodeURIComponent(DBC_CAPTURE_ID)
-             + "&description=" + encodeURIComponent(value));
+               + "&description=" + encodeURIComponent(value)
+               + "&CSRF_NONCE=" + encodeURIComponent(DBC_CSRF_NONCE));
    }
 
    (function () {

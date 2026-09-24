@@ -1,8 +1,8 @@
 {
   "name": "windchill-db-ninja",
-  "version": "0.1.1",
+  "version": "0.2.0-wc121-win1",
   "private": true,
-  "description": "Oracle diagnostics customization for non-production Windchill on qualified Linux targets",
+  "description": "Oracle diagnostics customization for non-production Windchill 12.1 on qualified Windows targets",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/milesplay/WindchillDbNinja.git" },
   "homepage": "https://github.com/milesplay/WindchillDbNinja",

@@ -12,9 +12,9 @@ export const assets = JSON.parse(fs.readFileSync(path.join(bundle, 'deployment/a
 export const actionIcons = actionIconDefinitions(assets);
 const moduleRoot = 'customization/DbCapture/main';
 const clientRoot = `${moduleRoot}/src_web/custom/DbCapture`;
-const service = 'com.ptc.dbcapture.DbCaptureService/com.ptc.dbcapture.StandardDbCaptureService';
-const settingKeys = ['com.ptc.dbcapture.excludeTables', 'com.ptc.dbcapture.maxRowsPerTable',
-  'com.ptc.dbcapture.correlateLogs'];
+const service = 'com.custom.dbcapture.DbCaptureService/com.custom.dbcapture.StandardDbCaptureService';
+const settingKeys = ['com.custom.dbcapture.excludeTables', 'com.custom.dbcapture.maxRowsPerTable',
+  'com.custom.dbcapture.correlateLogs'];
 const generatedJs = ['main.js', 'windchill-all-debug.js', 'windchill-all.js',
   'ext-and-extensions-debug.js', 'ext-and-extensions.js', 'windchill-libs-debug.js',
   'windchill-libs.js', 'jstable-all-debug.js', 'jstable-all.js',
@@ -78,9 +78,13 @@ function ant(env, script, targets, extra = []) {
   path.dirname(path.join(env.home, script)));
 }
 
-function xconf(env, args) {
+function xconf(env, args, capture = false) {
   const wrapper = path.join(env.home, process.platform === 'win32' ? 'bin/xconfmanager.bat' : 'bin/xconfmanager');
-  return run(wrapper, args, env.home);
+  return run(wrapper, args, env.home, capture);
+}
+
+export function describeProperty(env, name) {
+  return xconf(env, ['-d', name], true);
 }
 
 export function configuration(env, operation, input, output) {
@@ -89,7 +93,7 @@ export function configuration(env, operation, input, output) {
   const compiled = path.join(directory, 'ConfigurationFiles.class');
   mkdir(directory);
   if (!fs.existsSync(compiled) || fs.statSync(compiled).mtimeMs < fs.statSync(source).mtimeMs) {
-    run(env.javac, ['--release', '17', '-encoding', 'UTF-8', '-Xlint:all', '-Werror', '-d', directory, source], bundle);
+    run(env.javac, ['--release', '11', '-encoding', 'UTF-8', '-Xlint:all', '-Werror', '-d', directory, source], bundle);
   }
   return run(env.java, ['-cp', directory, 'ConfigurationFiles', operation, input, output], bundle, true);
 }
@@ -153,17 +157,17 @@ function preflight(env) {
   run(env.javac, ['-version'], bundle);
   const jar = path.join(env.javaHome, process.platform === 'win32' ? 'bin/jar.exe' : 'bin/jar');
   const servletClasses = run(jar, ['tf', path.join(env.home, 'tomcat/lib/servlet-api.jar')], bundle, true);
-  if (!servletClasses.includes('jakarta/servlet/http/HttpServletRequest.class')) {
-    throw new Error('Jakarta Servlet is required. Windchill releases using javax.servlet are not compatible as shipped.');
+  if (!servletClasses.includes('javax/servlet/http/HttpServletRequest.class')) {
+    throw new Error('This port requires the Windchill 12.1 javax.servlet API.');
   }
   const current = properties(env, 'codebase/wt.properties', ['wt.services.service.905000', ...settingKeys]);
   if (current['wt.services.service.905000'] && current['wt.services.service.905000'] !== service) {
     throw new Error('Service slot 905000 is already owned by another customization. Do not overwrite it.');
   }
-  if (current['com.ptc.dbcapture.correlateLogs'] === 'true') {
+  if (current['com.custom.dbcapture.correlateLogs'] === 'true') {
     throw new Error('Legacy SQL correlation is enabled. Review and disable it explicitly before adopting this package.');
   }
-  console.log('PASS: filesystem/toolchain checks. This does NOT verify Oracle privileges, undo, schema, Windows runtime or a maintenance window.');
+  console.log('PASS: Windows filesystem/toolchain checks. This does NOT verify Oracle privileges, undo, schema or a maintenance window.');
   console.log('Oracle-only: perform the database checks in COMPATIBILITY.md before building/activating.');
   return current;
 }
@@ -227,8 +231,8 @@ export function createPlan(env, reuseInstalled = false, javascriptOnly = false, 
     : reuseInstalled ? confined(env.home, 'custom/lib/DbCapture.jar') : source('build/DbCapture.jar');
   add(jar, 'custom/lib/DbCapture.jar');
   for (const name of metadataNames) {
-    add(candidate ? candidate.metadata[name] : reuseInstalled ? confined(env.home, `codebase/com/ptc/dbcapture/${name}`)
-      : source(`build/metadata/com/ptc/dbcapture/${name}`), `codebase/com/ptc/dbcapture/${name}`);
+    add(candidate ? candidate.metadata[name] : reuseInstalled ? confined(env.home, `codebase/com/custom/dbcapture/${name}`)
+      : source(`build/metadata/com/custom/dbcapture/${name}`), `codebase/com/custom/dbcapture/${name}`);
   }
   const jsfrag = `codebase/netmarkets/javascript/util/jsfrags/${assets.jsfrag}`;
   mkdir(path.dirname(confined(siteMod, jsfrag)));
@@ -484,7 +488,7 @@ function build(env) {
   const backup = path.join(bundle, 'backups', `build-${stamp()}`);
   mkdir(backup);
   const before = {};
-  for (const base of ['codebase/com/ptc/dbcapture', 'custom/ser/com/ptc/dbcapture']) {
+  for (const base of ['codebase/com/custom/dbcapture', 'custom/ser/com/custom/dbcapture']) {
     for (const name of metadataNames) {
       const relative = `${base}/${name}`, file = confined(env.home, relative);
       before[relative] = {hash: fingerprint(file), mode: fs.existsSync(file) ? fs.statSync(file).mode & 0o777 : null};
@@ -498,11 +502,11 @@ function build(env) {
     ant(env, 'bin/customizationTools/build.xml', ['clean', 'validate.folder.structure', 'compile'], options);
     copy(path.join(bundle, 'customization/temp/lib/DbCapture.jar'), path.join(bundle, 'build/DbCapture.jar'));
     for (const name of metadataNames) {
-      const candidates = ['codebase/com/ptc/dbcapture', 'custom/ser/com/ptc/dbcapture']
+      const candidates = ['codebase/com/custom/dbcapture', 'custom/ser/com/custom/dbcapture']
         .map(base => confined(env.home, `${base}/${name}`))
         .filter(file => fs.existsSync(file) && fs.statSync(file).mtimeMs >= started);
       if (candidates.length !== 1) throw new Error(`Cannot identify newly generated ${name}; inspect CCD output, do not reuse stale metadata.`);
-      copy(candidates[0], path.join(bundle, 'build/metadata/com/ptc/dbcapture', name));
+      copy(candidates[0], path.join(bundle, 'build/metadata/com/custom/dbcapture', name));
     }
     console.log('PASS: target-built JAR and seven ClassInfo files retained in build/. No CCD deploy was run.');
   } finally {
@@ -531,7 +535,14 @@ async function main() {
   else if (command === 'ddl') {
     maintenance();
     preflight(env);
-    ant(env, 'bin/tools.xml', ['sql_script'], ['-Dgen.input=com.ptc.dbcapture.*']);
+    const generatedClasspath = [path.join(bundle, 'build/DbCapture.jar'),
+      path.join(bundle, 'build/metadata')].join(path.delimiter);
+    if (!fs.existsSync(path.join(bundle, 'build/DbCapture.jar'))
+        || !fs.existsSync(path.join(bundle, 'build/metadata'))) {
+      throw new Error('Build the target JAR and ClassInfo before generating DDL.');
+    }
+    ant(env, 'bin/tools.xml', ['sql_script'], ['-Dgen.input=com.custom.dbcapture.*',
+      `-Dgen.classpath_add=${generatedClasspath}`]);
     console.log('Generated target DDL only; no SQL was executed. Inspect the generator output before assembling create-only SQL.');
   }
   else if (command === 'plan') {

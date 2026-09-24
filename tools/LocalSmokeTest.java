@@ -1,8 +1,8 @@
-package com.ptc.dbcapture.engine;
+package com.custom.dbcapture.engine;
 
-import com.ptc.dbcapture.DbCaptureSearch;
-import com.ptc.dbcapture.DbCaptureHelper;
-import com.ptc.dbcapture.DbCaptureSession;
+import com.custom.dbcapture.DbCaptureSearch;
+import com.custom.dbcapture.DbCaptureHelper;
+import com.custom.dbcapture.DbCaptureSession;
 import java.sql.Types;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetMetaDataImpl;

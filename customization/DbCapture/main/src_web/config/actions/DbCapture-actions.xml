@@ -5,20 +5,20 @@
    <!-- No class attribute: customActions.dtd declares it NMTOKEN, so an empty
         value is invalid and these actions have no backing object type. -->
    <objecttype name="dbcapture"
-               resourceBundle="com.ptc.dbcapture.dbCaptureActionResource">
+               resourceBundle="com.custom.dbcapture.dbCaptureActionResource">
 
       <!-- Quick Links entries. Each is offered only in the state it
            applies to; the filters are bound in DbCapture.service.properties.xconf. -->
       <action name="startDbCapture" enabledwhensuspended="true"
               uicomponent="DB_CAPTURE_ADMIN">
-         <command class="com.ptc.dbcapture.DbCaptureCommands" method="startDbCapture"
+         <command class="com.custom.dbcapture.DbCaptureCommands" method="startDbCapture"
                   onClick="window.DbCaptureHeader ? window.DbCaptureHeader.startFromAction() : (window.alert('DB Ninja controls are unavailable. Reload the page before using Ninja Trick.'), false)"/>
          <includeFilter name="dbCaptureNotRunningFilter"/>
       </action>
 
       <action name="stopDbCapture" enabledwhensuspended="true"
               uicomponent="DB_CAPTURE_ADMIN">
-         <command class="com.ptc.dbcapture.DbCaptureCommands" method="stopDbCapture"
+         <command class="com.custom.dbcapture.DbCaptureCommands" method="stopDbCapture"
                   onClick="window.DbCaptureHeader ? window.DbCaptureHeader.stopFromAction() : (window.alert('DB Ninja controls are unavailable. Reload the page before using Ninja Stealth.'), false)"/>
          <includeFilter name="dbCaptureRunningFilter"/>
       </action>
@@ -40,9 +40,9 @@
 
       <action name="deleteDbCaptureSession" ajax="row" multiselect="true"
               selectRequired="true" uicomponent="DB_CAPTURE_ADMIN">
-         <command class="com.ptc.dbcapture.DbCaptureCommands"
+         <command class="com.custom.dbcapture.DbCaptureCommands"
                   method="deleteDbCaptureSession"
-                  onClick="JCAConfirm(event,'com.ptc.dbcapture.dbCaptureActionResource.CONFIRM_DELETE')"/>
+                  onClick="JCAConfirm(event,'com.custom.dbcapture.dbCaptureActionResource.CONFIRM_DELETE')"/>
       </action>
 
       <action name="exportDbCaptureChangesCsv" selectRequired="false"

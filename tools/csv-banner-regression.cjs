@@ -336,8 +336,8 @@ test('CSV uses a dedicated standard table action model and OOTB export icon, not
   const files = {
     models: 'customization/DbCapture/main/src_web/config/actions/DbCapture-actionModels.xml',
     actions: 'customization/DbCapture/main/src_web/config/actions/DbCapture-actions.xml',
-    builder: 'customization/DbCapture/main/src/com/ptc/dbcapture/mvc/builders/DbCaptureChangeTableBuilder.java',
-    labels: 'customization/DbCapture/main/src/com/ptc/dbcapture/dbCaptureActionResource.java',
+    builder: 'customization/DbCapture/main/src/com/custom/dbcapture/mvc/builders/DbCaptureChangeTableBuilder.java',
+    labels: 'customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java',
     admin: 'customization/DbCapture/main/src_web/custom/DbCapture/overlay/netmarkets/jsp/dbcapture/dbCaptureAdmin.jsp'
   };
   const data = Object.fromEntries(Object.entries(files).map(([key, file]) =>

@@ -9,7 +9,7 @@ const jsp = fs.readFileSync(path.join(root, 'overlay/netmarkets/jsp/dbcapture/ca
 const asset = jsp.match(/\/custom\/DbCapture\/(dbCaptureDiagnostics-[\w.-]+\.js)/)[1];
 const client = fs.readFileSync(path.join(root, asset), 'utf8');
 const css = fs.readFileSync(path.join(root, 'dbCapture-v2026092003.css'), 'utf8');
-const javaRoot = path.resolve(__dirname, '../customization/DbCapture/main/src/com/ptc/dbcapture');
+const javaRoot = path.resolve(__dirname, '../customization/DbCapture/main/src/com/custom/dbcapture');
 const settleClipboard = () => new Promise(resolve => setImmediate(resolve));
 
 function fixture(hash = '', options = {}) {

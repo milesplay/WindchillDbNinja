@@ -10,6 +10,7 @@ const englishDocs = [
   'README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'CUSTOMIZATION.md',
   'OPERATIONS.md', 'HANDOFF.md', 'PUBLICATION.md', 'LOCAL-INSTALL.md',
   'USE-CASES.md', 'THIRD-PARTY-NOTICES.md', 'CHANGELOG.md', 'sql/oracle/README.md', 'DATABASE-SETUP.md',
+  'WINDOWS-PORTING.md', 'WINDOWS-MANUAL-INSTALL.md',
 ];
 const packageDocs = ['README.md', 'INSTALL.md', 'COMPATIBILITY.md', 'AGENTS.md', 'HANDOFF.md', 'PUBLICATION.md'];
 
@@ -38,7 +39,7 @@ for (const name of englishDocs) {
   });
 }
 
-for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md', 'DATABASE-SETUP.md']) {
+for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 'OPERATIONS.md', 'LOCAL-INSTALL.md', 'PUBLICATION.md', 'DATABASE-SETUP.md', 'WINDOWS-MANUAL-INSTALL.md']) {
   test(`${name}: deployment guidance explicitly prohibits production use`, () => {
     const text = prose(name);
     assert.match(text, /development and test environments only/i);
@@ -48,19 +49,19 @@ for (const name of ['README.md', 'INSTALL.md', 'AGENTS.md', 'COMPATIBILITY.md', 
 }
 
 for (const name of packageDocs) {
-  test(`${name}: records the exact Linux binary baseline and explicit candidate selection`, () => {
+  test(`${name}: records the exact Windows binary baseline and explicit candidate selection`, () => {
     const text = prose(name);
-    assert.match(text, /Windchill Services13\.0\.2\.11 build32 \(13\.0\.2\.0 CPS11\)/);
-    assert.match(text, /Corretto 17\.0\.12/);
+    assert.match(text, /Windchill Services12\.1\.2\.23 build38 \(12\.1\.2\.0 CPS23\)/);
+    assert.match(text, /Corretto 11\.0\.19/);
     assert.match(text, /Oracle 19c/);
-    assert.match(text, /Linux x64/);
+    assert.match(text, /Windows x64/);
     assert.match(text, /traditional.{0,30}`codebase`/i);
-    assert.match(text, /Windows[^.]{0,180}(?:unsupported|blocked)/i);
+    assert.match(text, /(?:local )?NTFS|NTFS volume/i);
     assert.match(text, /(?:other|different).{0,150}(?:CPS|SDK).{0,150}rebuild/i);
     assert.match(text, /plan --prebuilt/);
     assert.match(text, /default.{0,100}(?:plan|target[- ]build|target-built)/i);
     assert.ok(text.includes('prebuilt/DbCapture.jar'));
-    assert.ok(text.includes('prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser'));
+    assert.ok(text.includes('prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser'));
     assert.ok(text.includes('prebuilt/manifest.json'));
     assert.match(text, /seven/);
     assert.match(text, /checksums/);
@@ -190,7 +191,7 @@ for (const name of [...packageDocs, 'LOCAL-INSTALL.md']) {
 test('maintainer provenance identifies only the locked custom generated entries and unchanged model sources', () => {
   const text = prose('HANDOFF.md');
   assert.match(text, /tools\/build-prebuilt\.mjs/);
-  assert.match(text, /--release 17 -proc:none/);
+  assert.match(text, /--release 11 -proc:none/);
   assert.match(text, /fresh module-only JAR, not an overlay retaining stale implementation classes/);
   assert.match(text, /15 fingerprint-locked custom generated JAR entries/);
   assert.match(text, /Model base classes \| 7/);
@@ -230,20 +231,20 @@ test('publication authorizes MIT custom artifacts but excludes vendor and operat
   assert.doesNotMatch(text, /SOURCE_ONLY_EXPORT/);
   assert.doesNotMatch(text, /current public export is source-only|binary distribution approval.*required before changing that policy/i);
   const license = read('LICENSE');
-  assert.match(license, /^MIT License\n/);
+  assert.match(license, /^MIT License\r?\n/);
   assert.match(license, /Copyright \(c\) 2026 milesplay/);
   assert.match(license, /Permission is hereby granted, free of charge/);
   assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
 });
 
-test('Windows is excluded for evidence-filesystem requirements, not advertised as a working install', () => {
+test('Windows qualification requires the reviewed NTFS evidence policy', () => {
   const text = prose('COMPATIBILITY.md');
-  assert.match(text, /Linux x64 is the only shipped binary platform/);
-  assert.match(text, /Windows runtime is blocked as shipped, not merely untested/);
-  assert.match(text, /POSIX permissions.*unix:nlink/);
-  assert.match(text, /no NTFS ACL fallback/);
-  assert.match(text, /not a Windows execution result or Windows certification/);
-  assert.match(prose('AGENTS.md'), /Stop for.*Windows \(unsupported POSIX\/unix evidence storage\)/);
+  assert.match(text, /Windows x64 on a local NTFS volume is the qualified platform/);
+  assert.match(text, /owner.*system\/administrator identities/i);
+  assert.match(text, /symbolic links and reparse-point/);
+  assert.match(text, /Network shares and non-NTFS filesystems are rejected/);
+  assert.match(text, /locked-file deletion path.*native Java 11 regression/i);
+  assert.match(prose('AGENTS.md'), /Stop for.*non-Windows\/non-NTFS evidence storage/);
 });
 
 for (const name of ['README.md', 'AGENTS.md', 'OPERATIONS.md', 'HANDOFF.md', 'PUBLICATION.md', 'USE-CASES.md']) {

@@ -31,10 +31,10 @@ Thumbs.db
 /USE-CASES-ja.md
 /prebuilt/**/*.pending
 !/prebuilt/DbCapture.jar
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureAttrDelta.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureChange.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureSession.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureTableChange.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureChangeDeltaLink.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureSessionChangeLink.ClassInfo.ser
-!/prebuilt/metadata/com/ptc/dbcapture/DbCaptureSessionTableLink.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureAttrDelta.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureChange.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureSession.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureTableChange.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureChangeDeltaLink.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureSessionChangeLink.ClassInfo.ser
+!/prebuilt/metadata/com/custom/dbcapture/DbCaptureSessionTableLink.ClassInfo.ser

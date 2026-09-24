@@ -1,4 +1,4 @@
-package com.ptc.dbcapture.engine;
+package com.custom.dbcapture.engine;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /** Read-only audit assertions against installed shipped Oracle DDL, not table-name guesses. */
 public final class MonitoringScopeDdlTest {
@@ -28,7 +29,7 @@ public final class MonitoringScopeDdlTest {
         String install = Files.readString(home.resolve(
                 "db/sql3/wnc/Foundation/nonmodeled/tables/Make_nonmodeled_Foundation_tables.sql"));
         int nonmodeledOperational = 0;
-        for (String line : install.lines().toList()) {
+        for (String line : install.lines().collect(Collectors.toList())) {
             if (!line.startsWith("@wnc/Foundation/nonmodeled/tables/")
                     || line.contains("/Drop_") || line.contains("WCTK_") || line.contains("CURR_CNT_TABLE")) continue;
             String name = Path.of(line.substring(1)).getFileName().toString().replace(".sql", "")
@@ -53,8 +54,7 @@ public final class MonitoringScopeDdlTest {
         check(catalog.includedTables(new TableFilter(preferenceOptIn, "")).equals(List.of("PREFERENCEINSTANCE")),
                 "preference opt-in admits the grounded physical table");
         check(catalog.includedTables(defaults).isEmpty(), "every audited default excluded");
-        for (String table : List.of("QueueEventInfo", "QueueEntryEventInfo", "WorkflowVariableEventInfo",
-                "CheckInEventInfo", "UserSessionEventInfo")) {
+        for (String table : List.of("WorkflowVariableEventInfo", "CheckInEventInfo", "UserSessionEventInfo")) {
             retained(home, defaults, "db/sql3/wnc/Foundation/wt/audit/eventinfo/create_" + table + "_Table.sql", table);
         }
         for (String table : List.of("WfStateEventAudit", "WfVotingEventAudit", "WfAssignmentEventAudit", "WfProcess")) {

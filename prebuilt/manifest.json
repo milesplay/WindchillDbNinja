@@ -1,123 +1,119 @@
 {
   "schemaVersion": 1,
   "package": "windchill-db-ninja",
-  "version": "0.1.1",
-  "distribution": {
-    "runtimeUnchangedFrom": "0.1.0",
-    "note": "Packaging-only patch adding qualified Oracle DDL, release checks and documentation. Runtime JAR, ClassInfo, generated-model baseline and the original build timestamp are unchanged."
-  },
+  "version": "0.2.0-wc121-win1",
   "target": {
-    "os": "linux",
+    "os": "win32",
     "arch": "x64",
-    "javaMajor": 17,
-    "windchill": "13.0.2.11",
+    "javaMajor": 11,
+    "windchill": "12.1.2.23",
     "oracleMajor": 19,
-    "servlet": "jakarta",
+    "servlet": "javax",
     "layout": "traditional-codebase"
   },
   "build": {
     "method": "target-sdk-javac-with-matching-generated-models",
-    "compiler": "javac 17.0.12",
-    "javaRelease": 17,
-    "builtAt": "2026-09-21T06:26:19.775Z",
+    "compiler": "javac 11.0.19",
+    "javaRelease": 11,
+    "builtAt": "2026-09-22T13:31:03.151Z",
     "annotationProcessing": false,
-    "generatedModelBaselineSha256": "daee27f8a4c5b343e3fd78652645dd5387f7abba19f632cd7c235c10a9a21465",
+    "generatedModelBaselineSha256": "dfcc040a77348e38b29cf86f910103b3f1939fa6a183a84ea4063ff733bff35e",
     "note": "All current runtime Java sources compiled. Only unchanged, fingerprint-locked custom generated model/resource entries and ClassInfo were retained from the qualified target. No live files, PTC SDK libraries or generated PTC JavaScript bundles are copied into this package."
   },
   "sdk": {
-    "codebase/wt/fc/Persistable.class": "a48981441cfbca5586cb4dcba4d0794794287356d3d7b680e8bf4c03653bbdcb",
-    "codebase/wt/util/WTProperties.class": "f18efe9efca2bc5d6720a305ad3a1a3068c1f86063670432f3fabca5136e6629",
-    "codebase/wt/method/MethodContext.class": "6a50e12801787b8f392759b5f7f33977813b8902dcb1d3620ce3584f47b2efbb",
-    "codebase/wt/pom/WTConnection.class": "2a1e5fdd61a5ce7ea17df22e9b85795de603b3c0310c3747aa91f711032f2a7c",
-    "codebase/wt/introspection/ClassInfo.class": "850f9454d7c56f51f6af7a23256fe06fc9cd358cc99816a1cb73da932afbd346",
-    "tomcat/lib/servlet-api.jar": "4cd5c12a64258dabb096c968b6da036a238bc00fe2eff7feca07bf2b8a1f1157",
-    "srclib/log4j-api.jar": "92ec1fd36ab3bc09de6198d2d7c0914685c0f7127ea931acc32fd2ecdd82ea89",
-    "srclib/log4j-core.jar": "7079368005fc34f56248f57f8a8a53361c3a53e9007d556dbc66fc669df081b5",
-    "srclib/tool/Annotations.jar": "ffc079a9efc3b0ded15845948601bef95d10455645dce4d87fc59e599f68b9fc"
+    "codebase/wt/fc/Persistable.class": "8ce67042e83601543deb65e3fd1405f436f8c98b17215deff3678aa03e711ad9",
+    "codebase/wt/util/WTProperties.class": "58fb7cc776b0311bcf985a800f719afdfe48f68d9a06aa17275205f0fb2d068c",
+    "codebase/wt/method/MethodContext.class": "cb093d5c23397f84cc56e915386faf52bc520316f03d14451060a6f67bd7261d",
+    "codebase/wt/pom/WTConnection.class": "baffd21da665cdb09458662eab66da18b07c25514ac1270cd362e17cebeb3f10",
+    "codebase/wt/introspection/ClassInfo.class": "7a5e7c284d6bde92df9d64b8d5a7d1aef3a8e8dc97cd4df95e6e6993a3a2b15d",
+    "tomcat/lib/servlet-api.jar": "f1b670263abcb12feccb562134899002792a38bdf0dfda210a8e1aaada53bba4",
+    "srclib/log4j-api.jar": "820de7bbaf430eaf2e3e5ccb92f23e2085797c5ac4d4f7fc6c8b660fbefa1dbc",
+    "srclib/log4j-core.jar": "406bb3132c47a5d322e5c571feb0787ca84496469f346eb51f1ef2ee45499902",
+    "srclib/tool/Annotations.jar": "105ef0ea7932a268486f2e67c91330da4cab361b1da76a0f636af7dc191a8f60"
   },
   "sources": {
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureAttrDelta.java": "4dc23bf72aa49a883d0979ade60a3940fa8cf3317226b5dd59a7cac216bda91a",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureAuthorization.java": "33281533ad4e40971811ccab42b56b8398b52d1ebfb957903e7de5f1c831b869",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureBannerState.java": "a1af4be4572edce33212ad9f4fe140f206d9a96bd06139d8ca9a76efa6721ad2",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureChange.java": "5da6182eeca3aab8d260db1e4b9e46f90a907173526b5b1e85c55df7e0ef6a57",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureCommands.java": "c0934ff80f9f1b9187a5f0289fecf8c37d084811d05e0b17768b69ad5d03dd1e",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureDiagnostics.java": "e070cbb8b632ea79e62fe4dedcace543cde8c8d47befb18243e165560b5b6ccf",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureHelper.java": "150d39527c142157c4015cd08ae1eb2e41119f987f83c7c27837211deba36f3f",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureJdbc.java": "f750eb47d3700b054788d92e30cf362102d46dcadf14dc30ce5be9b40d4042f2",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureMonitoringScope.java": "f673fcdba3dc8073c48a3de967ba1c63a9ef1112fa97c593cbca234eda2e2df5",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureNavigation.java": "c209e781bcf94e67d819198d4f1cb4f03102e5e5ef565d39628ac0df5a0a5170",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureObjectReader.java": "2b5dbc7bb98f493f9952897037926fd62b895e6f3b9eb8cff1e09402a3ab7213",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCapturePresentation.java": "124db638e45120add67b5680a6483bc55d000308e6ccb3cb2c62711a1dd58175",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureSearch.java": "720a2f2361bcc89c3abe19dd8aec710ecb1272136aef18ff62a72fc33cd7c8aa",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureService.java": "8e92f050c50f2eca18c53b24f532d10ad26d06cf9525ffbcbab8d6a449deb241",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureSession.java": "ac49698a0e0b86091334f1603f92ef85ba3325a45d1da8ff777401e6f6287eb3",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureSettings.java": "73d9743cab362be05cdc78f68927a881e77716b47fa190f1ef89fcb823447ff7",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureStateFilter.java": "a1c182f5fe8626f5aa5f9408ff765cd263f9148aaeb37f521e368dea34f7087e",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/DbCaptureTableChange.java": "4528e151041b4b30d21b61192b2482f2e8047ff79c795a579437141ac08f31c6",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/StandardDbCaptureService.java": "3c9ea246d1b25e2ea15bc0954a12c5c68ad508a973c9b8de74e5a1214e3cfecc",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/dbCaptureActionResource.java": "29e750d6ab95133adcf83854038b9a5a5628aa9133a8e86798db0249013dfe5e",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/dbcaptureResource.rbInfo": "f80264f258f8ec8a8fb3b707e78d04b5d9886e8a2613d3f086059ab024415a7a",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/CaptureHealth.java": "0dd5844a7e16fd4589d06e34f05e45d0231a991ae8b8da681dbaa2420312813f",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SessionEvidenceStore.java": "62093073b2c1780f38f9b82cb500dd0cde23a41b8b85ae0133a538a4153f1bcc",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SqlEvidence.java": "e33829cc4bf562c9040fdca45dcb29c02f545d6f4c7e89adbfd1bcc5d9f1a7df",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SqlEvidenceCapture.java": "a41024cae75af3fd3eb178d4651379d1e9606cc1714ab8935d2633b8b91e07ea",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SqlEvidencePresentation.java": "dcb4de89c554aec6dc1bfcd42d42025b93e2dd9b06e6bd3daafbc1f7fdf569c8",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/SqlStatementClassifier.java": "75800b09008bfc7e8cdf7894b16adbc7e25d3e45a7a113eadf8fdd54f9bc5e13",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/diagnostics/WindchillRequestProbe.java": "38ffa8fd7d8b4bc39fb7fa906f1ab0c159faa7ed0ed15f88d0b22e3ff1848ce5",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/ActivitySnapshot.java": "2b911b2387c5745df17d83aaca0eabb14e380c898334cd655a68b08b4e73deb2",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/CaptureConcurrency.java": "16cdc90c514bb8f9d5c5f318c19986b298f674fd35971f5586347cfb06e70617",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/CaptureEngine.java": "53c6cb0690796dde9b53e8abf270e3f0f8d90a18d258acd3079f98aaeca03b58",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/CaptureResult.java": "35edc0fb32e2ed630c0c0a7050e75f86182cab5c4a2c5b68131ea3cb3dae3377",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/CapturedChange.java": "178bb039bcbcd6e231904f8aca76533905e17fd34a493f730ea3e64585d59858",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/ChangeReducer.java": "8043922c538b5ccf0d6d6748b3d67fc97bfae42b953ae735660c00787f282793",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/CorrelationHit.java": "4afdc10c6e5635ffded46b255685a2c5ee61b46839bb2b2d1fc2fc27ed4602ca",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/DatabaseTime.java": "7087d1da7c29c72ece87b7953bfcad64952bae76739e0714c1fe237f1dfc6d7d",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/FlashbackCollector.java": "c704eacc2951c0f95817bd9a7be6da9a6ac5255a90048dcf024d852c10541c0c",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/IdentityResolver.java": "04f4a788287b48e8ca98b627add3982b6f09adb3fb0427d7c376b1bbd1769420",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/LogCorrelator.java": "dd0874bbcb9c2dc2c859e00ad3c10302f026791630eea7f10a3879738a7382f0",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/MonitoringScope.java": "66adb8938f1afd10e01c02a5f3a415073423781c67844c815c2f70a3bbf7d391",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/RowVersion.java": "678a1e638e4620f536e9addf833c1ae740a7e62b63db6221cc828155977415d7",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/SnapshotCollector.java": "0893ed18361c488b8050bcc8805d5b4979e4ef36352342fc910b1bf4539c855a",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/SqlLogWindow.java": "320915fe327a4bb530c29508cfd53717b368c68c7302f08945f14dccfd80d94e",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/TableActivity.java": "8c0847541c43a29da08fb4ea6df89a3455465ecda5ea6c96916d996ada54cf2f",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/engine/TableFilter.java": "5f0d100ffd1c1d0d102b453f2e20ebffe8025e557dbd8334ea072fc1396a555d",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/mvc/DbCaptureReportDataUtility.java": "af00b421d7b07f4688b05d6e9fec9b873529f4c65bc73d6e9c13be567d1d1007",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/mvc/DbCaptureSessionDiagnosticsDataUtility.java": "2590c8b928dfe6e48c38568c3b10873610c3417886951e8fc0257a2949273c59",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/mvc/builders/DbCaptureChangeTableBuilder.java": "d5f2dc816fb34ed1520ae85b5446505d6ea3496d558e1182e2aa42011e06e778",
-    "customization/DbCapture/main/src/com/ptc/dbcapture/mvc/builders/DbCaptureSessionTableBuilder.java": "9ea34cfa52c2ab704015dece2f3198fa851778ba3e37c522040acdf77cf580bf"
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureAttrDelta.java": "995c69f5437676b962e6eae1394a44444a65d9e0f73302a4006b7c9ca2d61738",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureAuthorization.java": "b1308fb03965f6737788bfb591037a8048f0122b63485e5ac78c46efaa73751f",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureBannerState.java": "8f588c28e8943e4bfb647e4cdc83ec88e9c6398b67acaa5dd210119e440f6720",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureChange.java": "8aa65ff420853a7a9d28d1429c60c6b2fca4aa725b612f26d55e35d60fb29df8",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureCommands.java": "fd46e12ed9f698d5fe7f200a608d42531f413b1348a84efe3624598dc3abe89a",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureDiagnostics.java": "71edcb8a81d901f3c53c2b0d05814cd2726fa9f5fa0c7a2bdb4fff9bb5fa7550",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureHelper.java": "cd3fc31408c4483c6e0244316ba26dda8971ffd3f43babcb7591ad3e6240929e",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureJdbc.java": "a44ea1858731465fd8c433a5ab6abef5b4cb610873d0e67e53f907529a03231b",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureMonitoringScope.java": "a18fcc38a042caecd6c0bd0520401b7abeaa78289b0728cb691bdb65664bc154",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureNavigation.java": "94ecadc56d9ccca204a78590f9f75a583d9ad844181f48c5edacee98123f7343",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureObjectReader.java": "9aeda264e58ecb4e41d42145cd50e2a502b9e60bd6a64b2b7b08cb3c4f081054",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCapturePresentation.java": "6ee839efbaae78effb8c71012e0949c10c43976ba8c54848b9634bd64d38a8d3",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureSearch.java": "44f4d2cb3566840713005a91bbb51f6887659f3eb22aca284eac7033933b753a",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureService.java": "7d985b5ada58cfc0f34ae289a3ac9ebb150c845c6d4663bc914bf4497f344a93",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureSession.java": "ace4dd7211d235d9e7928048908fe424602262eb19e8fc843cae305af211f220",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureSettings.java": "0c009e7e5ca1f9f3ec1fea7a76276821cf8a0b58ec3938b40add2e9c9e83aecc",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureStateFilter.java": "59b20a5b595cb86b4adfc50ad7d5ba1d6ed4505bbab1b231065152c05ca4c2da",
+    "customization/DbCapture/main/src/com/custom/dbcapture/DbCaptureTableChange.java": "0542289db127d15e52c2dde05ed5132a0e43414a775ced9e2cd53f60d2264461",
+    "customization/DbCapture/main/src/com/custom/dbcapture/StandardDbCaptureService.java": "62046afe3f7af13820008b95d1f461434fc05d7b75e6015d7ff06dd615b86f07",
+    "customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java": "999cc0328128c8119ccb4fa41f44948bc365b14e58c4254569735c9d787a2752",
+    "customization/DbCapture/main/src/com/custom/dbcapture/dbcaptureResource.rbInfo": "f80264f258f8ec8a8fb3b707e78d04b5d9886e8a2613d3f086059ab024415a7a",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/CaptureHealth.java": "d8326d333a4b4f5a7619c9db6e7ec8db7b7497a1836e8cff52cfa76fc3ec738b",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SessionEvidenceStore.java": "0dadfd189b7eccc2f6ee8d1e250403106e9e8aca2ba7746a2677fc8d1eed6ee9",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SqlEvidence.java": "c4c1589ccce7722bafe7efaf848862c9dc001f8a1d2f0d8d2bc0a78897fcd669",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SqlEvidenceCapture.java": "9e1e9ad67101c7ad6c363c6410b55ec06d764a5d1b04d8f176b801e10a1a42e3",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SqlEvidencePresentation.java": "071e720d0118a283008ee89161d8955982be762c32ec2d68fc855f46eaf8dd09",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/SqlStatementClassifier.java": "d90d06c3a0193b4650be6491d7e54538514b6db9a9e1e542e0dba93dc5da6048",
+    "customization/DbCapture/main/src/com/custom/dbcapture/diagnostics/WindchillRequestProbe.java": "50e77c0b35f62076de90263144d9071282d41adc4e6a192c0b3bf9d922853a89",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/ActivitySnapshot.java": "45f8ab133e9214401ed47c76b896a8ba7c46e413d05f5ff4800fc2d6b1c581b7",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/CaptureConcurrency.java": "19a7e35d7909dc327706b404c063e720b7b85b35d1ea14280a057eaaab381a7e",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/CaptureEngine.java": "7cc96b1a8c0e9d0ae00e574b069faf35233ce8f295a6706b56d38c73acdbc4d1",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/CaptureResult.java": "67fd176daf7a7da2d4e33fde12d761498bdb8aedb462a7891f6c5d781929b131",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/CapturedChange.java": "b1ad03eca9d6c46bc399843ee340cf3d8e8895cb2486d9e1ebfd836d233a325a",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/ChangeReducer.java": "0297842f0679adf6741bdc31837acdc12165edb4c58f168108a79e85c2a9a3ba",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/CorrelationHit.java": "bfcd669bd9d7dce9c0aafc68b2406feb49e23d312680a44c7673bc42142016cb",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/DatabaseTime.java": "7d149181f175085c3884ee9e925bdb04cb78fc5a6c16de1b64a4ac0b30de3723",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/FlashbackCollector.java": "354c54cdbeb142d343d46c07a8ba6c779d28fe6463351b2c0d283b35d1c99e21",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/IdentityResolver.java": "75ab8ad5b5733b2c16804efb5abf2b0b6922c938aee8c15062e829a84c8c2050",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/LogCorrelator.java": "08c1ebaae1dfbd6fa673e76b7e0fdd4e7221cd5deb50f7ee9f992115a137e088",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/MonitoringScope.java": "e61b90c92c04f2cf10b912198d0aa41499e0863ba4aaddcf4764ffa04e441462",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/RowVersion.java": "e661bb38a55ef5c9cbb858ffaea4650e6f9781e2161fbd50157efbc1feabdd7c",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/SnapshotCollector.java": "25bdb5f803b4f22a1599ac2c69d24769d02911ef5c0dcd5ed20ec1883e025039",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/SqlLogWindow.java": "d689974eb7e5fbed74840a3e065161e9c05241450d1a467ad3f3b6426fa00614",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/TableActivity.java": "d587a39a8ca5c5972d4cecf9063489f591fb6c4aaa9f9be478e496cc4b14d824",
+    "customization/DbCapture/main/src/com/custom/dbcapture/engine/TableFilter.java": "0b5d46ae1f60f4fe67dc8ea2b85aef0813ef3ff12803da78799943f58ec3cbb3",
+    "customization/DbCapture/main/src/com/custom/dbcapture/mvc/DbCaptureReportDataUtility.java": "d63e2655b6348080e85a3eee7595c14aa3871a6fc37faafc0523777bed5f55b0",
+    "customization/DbCapture/main/src/com/custom/dbcapture/mvc/DbCaptureSessionDiagnosticsDataUtility.java": "743079e9846f704c93245e12f9e9f7488ecf29e8d58dc56144c4f9c03f1532f7",
+    "customization/DbCapture/main/src/com/custom/dbcapture/mvc/builders/DbCaptureChangeTableBuilder.java": "2df42ebad8f99fa6ce7c2d5f1e793f2f247d82739332756f802e481512a1ec7a",
+    "customization/DbCapture/main/src/com/custom/dbcapture/mvc/builders/DbCaptureSessionTableBuilder.java": "66434d0e4c294f440db7565ba5984931a474920280c2072346f375fbd34824d7"
   },
   "artifacts": {
     "prebuilt/DbCapture.jar": {
-      "bytes": 254435,
-      "sha256": "69859afca0ed384566e90db8a8cb177da7976f6d7efcded9b7adba83c3fada72"
+      "bytes": 255117,
+      "sha256": "137258482c99b414ced67bafb5b4f1b827f8b2416dae2a81d4011f1309b32ec9"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureAttrDelta.ClassInfo.ser": {
-      "bytes": 3433,
-      "sha256": "a28c1b044517a3ac69de241a74112df90ff6207f9f6a918e94a4e0adb733ec03"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureAttrDelta.ClassInfo.ser": {
+      "bytes": 3436,
+      "sha256": "374d69dc4c802a62ebb0f5c8dff015f13d1e63ca6e1d6d49b6c33e7d1212847b"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureChange.ClassInfo.ser": {
-      "bytes": 3186,
-      "sha256": "e1abc83547b70869d395181a3656b86f0ebdbcdfe20b69ed16d3df9b49019cdd"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureChange.ClassInfo.ser": {
+      "bytes": 3189,
+      "sha256": "d298a1ba41dabe3c7260369094e10a788ea463ad2f95a5bf841836f29ae23b61"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureSession.ClassInfo.ser": {
-      "bytes": 2933,
-      "sha256": "d4305d5d1dad0e889377998a3bd110864f273de1333291575f7cea4cbaf8a52b"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureSession.ClassInfo.ser": {
+      "bytes": 2936,
+      "sha256": "5b14c719d8b9c2e28b7bac7dbd94d4a13bdc75bcd0dd814b924c8ac4fc68bf4a"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureTableChange.ClassInfo.ser": {
-      "bytes": 3299,
-      "sha256": "441012301e9977c3a543a4ccb1f4523643998a46e7f2fbc0a1cef55326af5508"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureTableChange.ClassInfo.ser": {
+      "bytes": 3302,
+      "sha256": "74b1ad2b173246e86753ed77363f330bcde11ece40818ec4134f62eaa7ab2f61"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureChangeDeltaLink.ClassInfo.ser": {
-      "bytes": 1022,
-      "sha256": "21c29c26caa92b4c427021c31a8dae2b2d80b721597412244abab488ae099886"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureChangeDeltaLink.ClassInfo.ser": {
+      "bytes": 1031,
+      "sha256": "2faf4aee922e7d88437331e5bcfa9d243d8d951953044bb26b2744d5789b6b92"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureSessionChangeLink.ClassInfo.ser": {
-      "bytes": 1023,
-      "sha256": "2555b5a11b2ab06d7de90e243aa074effcca4a56dc271b3a26c18903f5928471"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureSessionChangeLink.ClassInfo.ser": {
+      "bytes": 1032,
+      "sha256": "65c111d911ec7420696c978067b7a495dd0f3f336630ce3c03eb1bebf764c244"
     },
-    "prebuilt/metadata/com/ptc/dbcapture/DbCaptureSessionTableLink.ClassInfo.ser": {
-      "bytes": 1036,
-      "sha256": "4bc4fcbe2b0a38ee0ab6fdd52260e96e53e99fb975bba681e25d0368c1e83e7f"
+    "prebuilt/metadata/com/custom/dbcapture/DbCaptureSessionTableLink.ClassInfo.ser": {
+      "bytes": 1045,
+      "sha256": "89185d82ba83d5152489f79c54fb0b876fa7a2e5ba2bfa0287c58fca0e159836"
     }
   }
 }

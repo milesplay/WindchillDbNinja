@@ -1,5 +1,5 @@
 set echo on
-REM Creating table DbCaptureAttrDelta for com.ptc.dbcapture.DbCaptureAttrDelta
+REM Creating table DbCaptureAttrDelta for com.custom.dbcapture.DbCaptureAttrDelta
 set echo off
 CREATE TABLE DbCaptureAttrDelta (
    actionName   VARCHAR2(1200 BYTE),
@@ -34,6 +34,6 @@ ENABLE PRIMARY KEY USING INDEX
  TABLESPACE INDX
  STORAGE ( INITIAL 20k NEXT 20k PCTINCREASE 0 )
 /
-COMMENT ON TABLE DbCaptureAttrDelta IS 'Table DbCaptureAttrDelta created for com.ptc.dbcapture.DbCaptureAttrDelta'
+COMMENT ON TABLE DbCaptureAttrDelta IS 'Table DbCaptureAttrDelta created for com.custom.dbcapture.DbCaptureAttrDelta'
 /
-REM @//com/ptc/dbcapture/DbCaptureAttrDelta_UserAdditions
+REM @//com/custom/dbcapture/DbCaptureAttrDelta_UserAdditions

@@ -1,13 +1,13 @@
 <%@ page contentType="text/html; charset=UTF-8" trimDirectiveWhitespaces="true"
-%><%@ page import="com.ptc.dbcapture.DbCaptureDiagnostics"
-%><%@ page import="com.ptc.dbcapture.diagnostics.SqlEvidencePresentation"
+%><%@ page import="com.custom.dbcapture.DbCaptureDiagnostics"
+%><%@ page import="com.custom.dbcapture.diagnostics.SqlEvidencePresentation"
 %><%@ page import="wt.util.HTMLEncoder"
 %><%!
    private static String html(String value) {
       return HTMLEncoder.encodeForHTMLContent(value == null ? "" : value);
    }
 
-   private static void tree(jakarta.servlet.jsp.JspWriter out,
+   private static void tree(javax.servlet.jsp.JspWriter out,
                             java.util.List<SqlEvidencePresentation.Node> nodes) throws java.io.IOException {
       out.write("<ul>");
       for (SqlEvidencePresentation.Node node : nodes) {
@@ -35,7 +35,7 @@
    String problem = null;
    DbCaptureDiagnostics.Report report = null;
    try {
-      com.ptc.dbcapture.DbCaptureAuthorization.requireAdministrator();
+      com.custom.dbcapture.DbCaptureAuthorization.requireAdministrator();
    } catch (wt.util.WTException e) {
       problem = e.getLocalizedMessage();
       response.setStatus(403);
@@ -45,11 +45,11 @@
          if (kind != null && !"sql".equals(kind) && !"stack".equals(kind)) {
             throw new IllegalArgumentException("Unknown capture diagnostic view.");
          }
-         report = com.ptc.dbcapture.DbCaptureHelper.service.readDiagnostics(request.getParameter("capture"));
+         report = com.custom.dbcapture.DbCaptureHelper.service.readDiagnostics(request.getParameter("capture"));
       } catch (wt.util.WTException | IllegalArgumentException e) {
          problem = e.getMessage() == null ? e.toString() : e.getMessage();
          response.setStatus(400);
-         org.apache.logging.log4j.LogManager.getLogger("com.ptc.dbcapture.captureDiagnostics")
+         org.apache.logging.log4j.LogManager.getLogger("com.custom.dbcapture.captureDiagnostics")
                .error("Capture diagnostic read failed.", e);
       }
    }

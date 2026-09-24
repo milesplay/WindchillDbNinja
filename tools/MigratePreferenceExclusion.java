@@ -1,12 +1,12 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import com.ptc.dbcapture.engine.MonitoringScope;
-import com.ptc.dbcapture.engine.TableFilter;
+import com.custom.dbcapture.engine.MonitoringScope;
+import com.custom.dbcapture.engine.TableFilter;
 
 import wt.util.WTProperties;
 

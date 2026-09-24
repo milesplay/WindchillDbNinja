@@ -5,6 +5,9 @@ Custom source and custom compiled JAR/ClassInfo distribution is owner-authorized
 under [MIT](LICENSE). Publication and live deployment remain separate from that
 approval. Start with [installation](INSTALL.md),
 [compatibility](COMPATIBILITY.md) and [operating semantics](OPERATIONS.md).
+The current qualified Windows line is `v0.2.0-wc121-win1`; use
+[WINDOWS-PORTING.md](WINDOWS-PORTING.md) for a new Windows release such as
+13.0.2 rather than replacing this target's artifacts.
 
 ## Architecture
 
@@ -73,18 +76,19 @@ unchanged. Renaming them can break old records or serialization.
 ## Package contract
 
 The optional prebuilt candidate is `prebuilt/DbCapture.jar`, seven
-`prebuilt/metadata/com/ptc/dbcapture/*.ClassInfo.ser` files and
+`prebuilt/metadata/com/custom/dbcapture/*.ClassInfo.ser` files and
 `prebuilt/manifest.json` with checksums, source fingerprints and target
-version/SDK fingerprints. Its exact baseline is **Windchill Services13.0.2.11
-build32 (13.0.2.0 CPS11), Corretto 17.0.12, Oracle 19c, Linux x64, traditional
+version/SDK fingerprints. Its exact baseline is **Windchill Services12.1.2.23
+build38 (12.1.2.0 CPS23), Corretto 11.0.19, Oracle 19c, Windows x64, traditional
 `codebase`**. Other CPS/SDK combinations need rebuild and qualification.
-Windows is unsupported as shipped; the evidence store requires POSIX/unix
-attributes. There is no Windows certification.
+The evidence store is qualified for a local NTFS volume with explicit ACL and
+link/reparse-point checks. Other Windows service identities/filesystems require
+separate qualification.
 
 Default `plan` uses the target build; `plan --prebuilt` explicitly selects the
 verified package. Do not silently fall back to an old installed JAR.
 [Fresh-install DDL](sql/oracle/README.md) is bundled for the exact Oracle 19c /
-unchanged Windchill 13.0.2.11 model / `wt.db.maxBytesPerChar=3` / BYTE / INDX
+unchanged Windchill 12.1.2.23 model / `wt.db.maxBytesPerChar=3` / BYTE / INDX
 profile; all other profiles require target generation and qualification.
 DBA review/execution is separate. No PTC/Oracle libraries or generated PTC
 JavaScript bundles belong in the package.
@@ -101,7 +105,7 @@ agree. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.1 packaging-only patch.
 ### Current-source prebuilt assembly
 
 `tools/build-prebuilt.mjs` compiles **all current runtime Java** against the
-target SDK with `--release 17 -proc:none` into private output. It assembles a
+target SDK with `--release 11 -proc:none` into private output. It assembles a
 fresh module-only JAR, **not an overlay retaining stale implementation classes**.
 Only these 15 fingerprint-locked custom generated JAR entries are retained from
 the previous verified target CCD generation:

@@ -8,7 +8,8 @@
    var ENDPOINT = "netmarkets/jsp/dbcapture/dbCaptureState.jsp";
    var state = {
       running: false, captureId: null, startedBy: null, startedAtMillis: 0,
-      administrator: false, ownedByCurrentUser: false, canStart: false, canStop: false
+      administrator: false, ownedByCurrentUser: false, canStart: false, canStop: false,
+      csrfNonce: null
    };
    var known = false;
    var operation = null;
@@ -290,6 +291,8 @@
       state.ownedByCurrentUser = data.ownedByCurrentUser === true;
       state.canStart = data.canStart;
       state.canStop = data.canStop;
+      state.csrfNonce = data.administrator && typeof data.csrfNonce === "string"
+         ? data.csrfNonce : null;
       known = true;
       statusError = "";
       idleStateNotice = "";
@@ -299,6 +302,7 @@
    function call(params, announce) {
       params = params || {};
       var stateOnly = !params.op;
+      if (!stateOnly && state.csrfNonce) { params.CSRF_NONCE = state.csrfNonce; }
       if (stateOnly && (operation || (stateRequestPending
             && stateRequestPending.generation === generation))) { return; }
       if (!stateOnly) { generation++; }

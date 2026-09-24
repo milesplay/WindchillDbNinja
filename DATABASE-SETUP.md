@@ -164,7 +164,7 @@ node tools/schema-package.mjs verify --target
 ```
 
 These commands do not connect to Oracle. They require unchanged models and the
-qualified Windchill 13.0.2.11 / Oracle 19c / `wt.db.maxBytesPerChar=3` / BYTE /
+qualified Windchill 12.1.2.23 / Oracle 19c / `wt.db.maxBytesPerChar=3` / BYTE /
 INDX profile; the DBA confirms the database-side conditions. Other profiles
 require target PTC generation and a new reviewed script, not altered checksums.
 

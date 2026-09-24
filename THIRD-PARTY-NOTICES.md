@@ -13,7 +13,7 @@ with an authorized target SDK. Review JAR contents and serialized metadata
 before publication; compilation against an SDK is not permission to redistribute
 that SDK.
 
-The historical `com.ptc.dbcapture` package names identify custom persistent
+The historical `com.custom.dbcapture` package names identify custom persistent
 types and are preserved for compatibility. They do not imply PTC authorship,
 support or certification. Product names identify compatibility prerequisites;
 no endorsement by their owners is claimed.

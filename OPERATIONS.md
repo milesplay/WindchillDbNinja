@@ -1,9 +1,8 @@
 # Capture semantics, safe use and workload limits
 
 This guide defines the agreed release behavior and its limits, not a promise of
-complete Oracle history or production-scale performance. The first binary is
-Linux x64 only; Windows is unsupported as shipped because private evidence
-requires POSIX permissions and `unix:nlink`.
+complete Oracle history or production-scale performance. The qualified binary is
+Windows x64 only; private evidence requires the reviewed local-NTFS ACL policy.
 
 **Development and test environments only. Do not install or run DB Ninja in
 production.** Use approved, access-controlled test data. A copy of production

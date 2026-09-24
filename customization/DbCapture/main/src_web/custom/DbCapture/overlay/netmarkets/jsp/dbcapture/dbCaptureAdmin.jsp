@@ -13,6 +13,19 @@
 <%@ taglib uri="http://www.ptc.com/windchill/taglib/components" prefix="jca"%>
 <%@ taglib uri="http://www.ptc.com/windchill/taglib/wrappers" prefix="w"%>
 <%@ taglib uri="http://www.ptc.com/windchill/taglib/search" prefix="s"%>
+<%@ page import="com.custom.dbcapture.DbCaptureAuthorization"%>
+<%@ page import="com.ptc.core.appsec.CSRFProtector"%>
+<%@ page import="wt.util.HTMLEncoder"%>
+
+<%
+   try {
+      DbCaptureAuthorization.requireAdministrator();
+   } catch (wt.util.WTException authorizationFailure) {
+      response.sendError(403);
+      return;
+   }
+   String dbcCsrfNonce = CSRFProtector.getNonce(request);
+%>
 
 <%@ include file="/netmarkets/jsp/util/begin.jspf"%>
 
@@ -24,21 +37,21 @@
       dbcCompletedCapture = "";
    } else {
       try {
-         com.ptc.dbcapture.DbCaptureAuthorization.requireAdministrator();
+         com.custom.dbcapture.DbCaptureAuthorization.requireAdministrator();
          if (!dbcCompletedCapture.matches("CAP-[0-9]{1,36}")) {
             throw new wt.util.WTException("Invalid completed capture ID.");
          }
-         com.ptc.dbcapture.DbCaptureSession completed =
-               com.ptc.dbcapture.DbCaptureHelper.findSession(dbcCompletedCapture);
-         if (!com.ptc.dbcapture.DbCaptureHelper.isVisible(completed, false)) {
+         com.custom.dbcapture.DbCaptureSession completed =
+               com.custom.dbcapture.DbCaptureHelper.findSession(dbcCompletedCapture);
+         if (!com.custom.dbcapture.DbCaptureHelper.isVisible(completed, false)) {
             throw new wt.util.WTException("The completed capture could not be found: "
                   + dbcCompletedCapture + ". Use Search to choose another capture.");
          }
-         dbcCompletionMessage = com.ptc.dbcapture.DbCaptureHelper.completionMessage(completed);
+         dbcCompletionMessage = com.custom.dbcapture.DbCaptureHelper.completionMessage(completed);
       } catch (wt.util.WTException e) {
          dbcCompletedCapture = "";
          dbcCompletionProblem = e.getLocalizedMessage();
-         org.apache.logging.log4j.LogManager.getLogger("com.ptc.dbcapture.results")
+         org.apache.logging.log4j.LogManager.getLogger("com.custom.dbcapture.results")
                .error("Could not open completed capture results.", e);
       }
    }
@@ -197,6 +210,7 @@
    var DBC_CHANGE_TABLE  = "dbcapture.changeTable";
    var DBC_TABLES        = [DBC_SESSION_TABLE, DBC_CHANGE_TABLE];
    var DBC_ENDPOINT      = "netmarkets/jsp/dbcapture/dbCaptureState.jsp";
+   var DBC_CSRF_NONCE    = "<%=HTMLEncoder.encodeForJavascript(dbcCsrfNonce)%>";
    var DBC_COMPLETED_CAPTURE = "<%=wt.util.HTMLEncoder.encodeForJavascript(dbcCompletedCapture)%>";
 
    /**
@@ -307,6 +321,9 @@
    }
 
    function dbcPostJson(body, done) {
+      if (typeof DBC_CSRF_NONCE === "string" && DBC_CSRF_NONCE) {
+         body += "&CSRF_NONCE=" + encodeURIComponent(DBC_CSRF_NONCE);
+      }
       var pageControl = document.getElementById("dbcSearchButton");
       var req = new XMLHttpRequest();
       var settled = false;

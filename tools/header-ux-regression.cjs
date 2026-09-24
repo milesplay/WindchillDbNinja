@@ -185,7 +185,7 @@ test('unavailable or unauthorized actions do not even offer a confirmation', () 
 
 test('DB Ninja labels rename the public actions without changing their stable internal keys', () => {
   const labels = fs.readFileSync(path.join(__dirname,
-    '../customization/DbCapture/main/src/com/ptc/dbcapture/dbCaptureActionResource.java'), 'utf8');
+    '../customization/DbCapture/main/src/com/custom/dbcapture/dbCaptureActionResource.java'), 'utf8');
   for (const [text, key] of [
     ['DB Ninja', 'dbcapture.dbCaptureAdmin.description'],
     ['Ninja Trick', 'dbcapture.startDbCapture.description'],

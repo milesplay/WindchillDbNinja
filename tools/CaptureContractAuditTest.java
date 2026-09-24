@@ -1,9 +1,9 @@
-package com.ptc.dbcapture.engine;
+package com.custom.dbcapture.engine;
 
-import com.ptc.dbcapture.DbCaptureAuthorization;
-import com.ptc.dbcapture.DbCaptureObjectReader;
-import com.ptc.dbcapture.DbCaptureSession;
-import com.ptc.dbcapture.diagnostics.SessionEvidenceStore;
+import com.custom.dbcapture.DbCaptureAuthorization;
+import com.custom.dbcapture.DbCaptureObjectReader;
+import com.custom.dbcapture.DbCaptureSession;
+import com.custom.dbcapture.diagnostics.SessionEvidenceStore;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import wt.util.WTProperties;
 
 /**
@@ -49,11 +50,11 @@ public final class CaptureContractAuditTest {
       }
       Properties configuration = WTProperties.getLocalProperties();
       Object oldHome = configuration.get("wt.home");
-      Object oldCap = configuration.get("com.ptc.dbcapture.maxRowsPerTable");
+      Object oldCap = configuration.get("com.custom.dbcapture.maxRowsPerTable");
       Object oldExcludes = configuration.get(TableFilter.EXCLUDE_PROPERTY);
       try {
          configuration.setProperty("wt.home", fixture.toString());
-         configuration.setProperty("com.ptc.dbcapture.maxRowsPerTable", "5000");
+         configuration.setProperty("com.custom.dbcapture.maxRowsPerTable", "5000");
          configuration.setProperty(TableFilter.EXCLUDE_PROPERTY, "");
          reducers();
          snapshots();
@@ -67,7 +68,7 @@ public final class CaptureContractAuditTest {
          identities();
       } finally {
          restore(configuration, "wt.home", oldHome);
-         restore(configuration, "com.ptc.dbcapture.maxRowsPerTable", oldCap);
+         restore(configuration, "com.custom.dbcapture.maxRowsPerTable", oldCap);
          restore(configuration, TableFilter.EXCLUDE_PROPERTY, oldExcludes);
       }
       System.out.println("CaptureContractAuditTest: " + passed + " passed, " + failures.size()
@@ -156,7 +157,7 @@ public final class CaptureContractAuditTest {
       Object[][] after = {{1L, "C", "0", "2"}, {3L, "D", "0", "1"}, {4L, "same", "0", "2"}};
       Jdbc jdbc = new Jdbc((sql, binds) -> tableRows(sql.contains("AS OF SCN 99 ") ? before : after));
       SnapshotCollector.Result exact = new SnapshotCollector(jdbc.connection(), REDUCER).collect("WTPART", 100, 200, 3);
-      check(exact.getChanges().stream().map(CapturedChange::getOperation).toList()
+      check(exact.getChanges().stream().map(CapturedChange::getOperation).collect(Collectors.toList())
             .equals(List.of("UPDATE", "DELETE", "CREATE")), "ordered endpoint merge covers UPDATE/DELETE/CREATE");
       check(!exact.isTruncated(), "exactly-at-cap endpoint changes are not falsely truncated");
       check(exact.getChanges().stream().allMatch(c -> c.getChangeScn() == 0
@@ -194,8 +195,8 @@ public final class CaptureContractAuditTest {
          return versions(new Object[0][]);
       });
       new FlashbackCollector(chunks.connection()).versionsForRows("WTPART", 100, 200,
-            java.util.stream.LongStream.rangeClosed(1, 1001).boxed().toList());
-      check(chunks.parameters.stream().map(Map::size).toList().equals(List.of(1000, 1)),
+            java.util.stream.LongStream.rangeClosed(1, 1001).boxed().collect(Collectors.toList()));
+      check(chunks.parameters.stream().map(Map::size).collect(Collectors.toList()).equals(List.of(1000, 1)),
             "1001 version IDs become two bound chunks, never interpolated ID text");
       check(chunks.sql.stream().filter(s -> s.contains("VERSIONS BETWEEN"))
             .allMatch(s -> s.contains("SCN 100 AND 200 AS OF SCN 200")),
@@ -568,10 +569,10 @@ public final class CaptureContractAuditTest {
          expect(IllegalArgumentException.class, () -> DbCaptureObjectReader.positiveId(id),
                "invalid captured entry identity is rejected");
       }
-      String oid = "com.ptc.dbcapture.DbCaptureSession:42";
+      String oid = "com.custom.dbcapture.DbCaptureSession:42";
       check(SessionEvidenceStore.canonicalSessionOid("OR:" + oid).equals(oid),
             "private evidence uses canonical persistent OID, not recycled display capture ID");
-      for (String id : List.of("CAP-000042", "wt.part.WTPart:42", "../../42", "com.ptc.dbcapture.DbCaptureSession:0")) {
+      for (String id : List.of("CAP-000042", "wt.part.WTPart:42", "../../42", "com.custom.dbcapture.DbCaptureSession:0")) {
          expect(IllegalArgumentException.class, () -> SessionEvidenceStore.canonicalSessionOid(id),
                "foreign, display-only or malformed evidence identities are refused");
       }
@@ -647,11 +648,14 @@ public final class CaptureContractAuditTest {
    }
 
    private static ResultSet rows(String[] names, int[] types, Object[][] values) {
-      ResultSetMetaData metadata = proxy(ResultSetMetaData.class, (p, method, args) -> switch (method.getName()) {
-         case "getColumnCount" -> names.length;
-         case "getColumnName", "getColumnLabel" -> names[(int) args[0] - 1];
-         case "getColumnType" -> types[(int) args[0] - 1];
-         default -> throw new AssertionError("Unexpected metadata call: " + method.getName());
+            ResultSetMetaData metadata = proxy(ResultSetMetaData.class, (p, method, args) -> {
+                  switch (method.getName()) {
+                        case "getColumnCount": return names.length;
+                        case "getColumnName":
+                        case "getColumnLabel": return names[(int) args[0] - 1];
+                        case "getColumnType": return types[(int) args[0] - 1];
+                        default: throw new AssertionError("Unexpected metadata call: " + method.getName());
+                  }
       });
       int[] index = {-1};
       boolean[] wasNull = {false};
@@ -664,15 +668,18 @@ public final class CaptureContractAuditTest {
             default:
                Object value = values[index[0]][(int) args[0] - 1];
                wasNull[0] = value == null;
-               return switch (method.getName()) {
-                  case "getLong" -> value == null ? 0L : ((Number) value).longValue();
-                  case "getInt" -> value == null ? 0 : ((Number) value).intValue();
-                  case "getString" -> value == null ? null : value.toString();
-                  case "getBytes", "getTimestamp" -> value;
-                  case "getCharacterStream" -> value == null ? null : new java.io.StringReader(value.toString());
-                  case "getBinaryStream" -> value == null ? null : new java.io.ByteArrayInputStream((byte[]) value);
-                  default -> throw new AssertionError("Unexpected ResultSet call: " + method.getName());
-               };
+                              switch (method.getName()) {
+                                    case "getLong": return value == null ? 0L : ((Number) value).longValue();
+                                    case "getInt": return value == null ? 0 : ((Number) value).intValue();
+                                    case "getString": return value == null ? null : value.toString();
+                                    case "getBytes":
+                                    case "getTimestamp": return value;
+                                    case "getCharacterStream":
+                                          return value == null ? null : new java.io.StringReader(value.toString());
+                                    case "getBinaryStream":
+                                          return value == null ? null : new java.io.ByteArrayInputStream((byte[]) value);
+                                    default: throw new AssertionError("Unexpected ResultSet call: " + method.getName());
+                              }
          }
       });
    }
@@ -696,10 +703,12 @@ public final class CaptureContractAuditTest {
       private Jdbc(Query query) { this.query = query; }
 
       private Connection connection() {
-         return proxy(Connection.class, (p, method, args) -> switch (method.getName()) {
-            case "prepareStatement" -> statement((String) args[0], true);
-            case "createStatement" -> statement(null, false);
-            default -> throw new AssertionError("No connection ownership/transaction calls allowed: " + method.getName());
+                  return proxy(Connection.class, (p, method, args) -> {
+                        switch (method.getName()) {
+                              case "prepareStatement": return statement((String) args[0], true);
+                              case "createStatement": return statement(null, false);
+                              default: throw new AssertionError("No connection ownership/transaction calls allowed: " + method.getName());
+                        }
          });
       }
 
@@ -708,9 +717,13 @@ public final class CaptureContractAuditTest {
          InvocationHandler handler = (p, method, args) -> {
             switch (method.getName()) {
                case "close": closedStatements++; return null;
-               case "setQueryTimeout", "setFetchSize", "setMaxRows":
+                              case "setQueryTimeout":
+                              case "setFetchSize":
+                              case "setMaxRows":
                   options.add(method.getName() + "=" + args[0]); return null;
-               case "setLong", "setString", "setTimestamp":
+                              case "setLong":
+                              case "setString":
+                              case "setTimestamp":
                   binds.put((int) args[0], args[1]); return null;
                case "execute":
                   String command = (String) args[0];

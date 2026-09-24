@@ -1,7 +1,7 @@
-package com.ptc.dbcapture;
+package com.custom.dbcapture;
 
-import com.ptc.dbcapture.engine.CaptureEngine;
-import com.ptc.dbcapture.engine.TableFilter;
+import com.custom.dbcapture.engine.CaptureEngine;
+import com.custom.dbcapture.engine.TableFilter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
@@ -59,14 +60,14 @@ public final class CaptureLifecycleTest {
       Path home = root.resolve("home");
       Properties properties = WTProperties.getLocalProperties();
       Map<String, Object> previous = new LinkedHashMap<>();
-      for (String name : List.of("wt.home", TableFilter.EXCLUDE_PROPERTY, "com.ptc.dbcapture.maxRowsPerTable")) {
+      for (String name : List.of("wt.home", TableFilter.EXCLUDE_PROPERTY, "com.custom.dbcapture.maxRowsPerTable")) {
          previous.put(name, properties.get(name));
       }
       try (URLClassLoader loader = serviceLoader(root)) {
          properties.setProperty("wt.home", home.toString());
          properties.setProperty(TableFilter.EXCLUDE_PROPERTY, "");
-         properties.setProperty("com.ptc.dbcapture.maxRowsPerTable", "5000");
-         Class<?> serviceClass = loader.loadClass("com.ptc.dbcapture.StandardDbCaptureService");
+         properties.setProperty("com.custom.dbcapture.maxRowsPerTable", "5000");
+         Class<?> serviceClass = loader.loadClass("com.custom.dbcapture.StandardDbCaptureService");
          correlation(serviceClass);
          lifecycle(serviceClass, home);
       } finally {
@@ -75,7 +76,7 @@ public final class CaptureLifecycleTest {
          });
          if (Files.exists(home)) {
             try (var files = Files.walk(home)) {
-               for (Path file : files.sorted(Comparator.reverseOrder()).toList()) Files.delete(file);
+               for (Path file : files.sorted(Comparator.reverseOrder()).collect(Collectors.toList())) Files.delete(file);
             }
          }
       }
@@ -88,7 +89,7 @@ public final class CaptureLifecycleTest {
       correlationSettings.clear();
       check(Boolean.FALSE.equals(invoke(enabled, null)), "missing legacy logging opt-in is disabled");
       for (String raw : List.of("", "false", " false ", "yes", "0", "perhaps", "true", " TRUE ")) {
-         correlationSettings.setProperty("com.ptc.dbcapture.correlateLogs", raw);
+         correlationSettings.setProperty("com.custom.dbcapture.correlateLogs", raw);
          check(Boolean.valueOf(raw.trim().equalsIgnoreCase("true")).equals(invoke(enabled, null)),
                "only explicit true enables legacy logging: [" + raw + "]");
       }
@@ -235,77 +236,70 @@ public final class CaptureLifecycleTest {
       try {
          return method.invoke(object, args);
       } catch (InvocationTargetException failure) {
-         if (failure.getCause() instanceof Exception exception) throw exception;
+         if (failure.getCause() instanceof Exception) throw (Exception) failure.getCause();
          throw (Error) failure.getCause();
       }
    }
 
    private static URLClassLoader serviceLoader(Path root) throws Exception {
       Map<String, String> stubs = new LinkedHashMap<>();
-      stubs.put("com.ptc.dbcapture.DbCaptureAuthorization", """
-            package com.ptc.dbcapture;
-            public class DbCaptureAuthorization {
-               public static void requireAdministrator() throws wt.util.WTException { CaptureLifecycleTest.requireAdministrator(); }
-               public static void requireOwner(DbCaptureSession s) throws wt.util.WTException { CaptureLifecycleTest.requireOwner(s); }
-            }
-            """);
-      stubs.put("com.ptc.dbcapture.DbCaptureJdbc", """
-            package com.ptc.dbcapture;
-            public class DbCaptureJdbc {
-               public static java.sql.Connection connection() { CaptureLifecycleTest.connections++; return CaptureLifecycleTest.connection; }
-            }
-            """);
-      stubs.put("com.ptc.dbcapture.DbCaptureHelper", """
-            package com.ptc.dbcapture;
-            public class DbCaptureHelper {
-               public static DbCaptureSession findRunningSession() { return CaptureLifecycleTest.current; }
-               public static DbCaptureSession findSession(long id) {
-                  if (id != 41) throw new AssertionError("Wrong locked session identity");
-                  return CaptureLifecycleTest.current;
-               }
-               public static String nextCaptureId() { return "CAP-000041"; }
-               public static DbCaptureSession save(DbCaptureSession s) { return CaptureLifecycleTest.save(s); }
-               public static void storeChanges(DbCaptureSession s, java.util.List<com.ptc.dbcapture.engine.CapturedChange> changes) {
-                  CaptureLifecycleTest.stores++;
-               }
-            }
-            """);
-      stubs.put("com.ptc.dbcapture.DbCaptureDiagnostics", """
-            package com.ptc.dbcapture;
-            public class DbCaptureDiagnostics {
-               public static com.ptc.dbcapture.diagnostics.SqlEvidenceCapture begin(
-                     DbCaptureSession s, java.util.List<String> included, java.util.List<String> physical) {
-                  CaptureLifecycleTest.includedTables = java.util.List.copyOf(included);
-                  CaptureLifecycleTest.physicalTables = java.util.List.copyOf(physical);
-                  return null;
-               }
-               public static String warning(DbCaptureSession s) { return null; }
-            }
-            """);
-      stubs.put("com.ptc.dbcapture.engine.SqlLogWindow", """
-            package com.ptc.dbcapture.engine;
-            public class SqlLogWindow {
-               private boolean open;
-               public void open() { open = true; com.ptc.dbcapture.CaptureLifecycleTest.opens++; }
-               public void close() { open = false; com.ptc.dbcapture.CaptureLifecycleTest.closes++; }
-               public boolean isOpen() { return open; }
-            }
-            """);
-      stubs.put("wt.util.WTProperties", """
-            package wt.util;
-            public class WTProperties extends java.util.Properties {
-               public static WTProperties getLocalProperties() throws java.io.IOException {
-                  if (com.ptc.dbcapture.CaptureLifecycleTest.correlationReadFailure) throw new java.io.IOException("synthetic settings read failure");
-                  WTProperties properties = new WTProperties();
-                  properties.putAll(com.ptc.dbcapture.CaptureLifecycleTest.correlationSettings);
-                  return properties;
-               }
-            }
-            """);
-      stubs.put("wt.session.SessionHelper", """
-            package wt.session;
-            public class SessionHelper { public static SessionManager manager; }
-            """);
+      stubs.put("com.custom.dbcapture.DbCaptureAuthorization", source(
+         "package com.custom.dbcapture;",
+         "public class DbCaptureAuthorization {",
+         "  public static void requireAdministrator() throws wt.util.WTException { CaptureLifecycleTest.requireAdministrator(); }",
+         "  public static void requireOwner(DbCaptureSession s) throws wt.util.WTException { CaptureLifecycleTest.requireOwner(s); }",
+         "}"));
+      stubs.put("com.custom.dbcapture.DbCaptureJdbc", source(
+         "package com.custom.dbcapture;",
+         "public class DbCaptureJdbc {",
+         "  public static java.sql.Connection connection() { CaptureLifecycleTest.connections++; return CaptureLifecycleTest.connection; }",
+         "}"));
+      stubs.put("com.custom.dbcapture.DbCaptureHelper", source(
+         "package com.custom.dbcapture;",
+         "public class DbCaptureHelper {",
+         "  public static DbCaptureSession findRunningSession() { return CaptureLifecycleTest.current; }",
+         "  public static DbCaptureSession findSession(long id) {",
+         "    if (id != 41) throw new AssertionError(\"Wrong locked session identity\");",
+         "    return CaptureLifecycleTest.current;",
+         "  }",
+         "  public static String nextCaptureId() { return \"CAP-000041\"; }",
+         "  public static DbCaptureSession save(DbCaptureSession s) { return CaptureLifecycleTest.save(s); }",
+         "  public static void storeChanges(DbCaptureSession s, java.util.List<com.custom.dbcapture.engine.CapturedChange> changes) {",
+         "    CaptureLifecycleTest.stores++;",
+         "  }",
+         "}"));
+      stubs.put("com.custom.dbcapture.DbCaptureDiagnostics", source(
+         "package com.custom.dbcapture;",
+         "public class DbCaptureDiagnostics {",
+         "  public static com.custom.dbcapture.diagnostics.SqlEvidenceCapture begin(",
+         "        DbCaptureSession s, java.util.List<String> included, java.util.List<String> physical) {",
+         "    CaptureLifecycleTest.includedTables = java.util.List.copyOf(included);",
+         "    CaptureLifecycleTest.physicalTables = java.util.List.copyOf(physical);",
+         "    return null;",
+         "  }",
+         "  public static String warning(DbCaptureSession s) { return null; }",
+         "}"));
+      stubs.put("com.custom.dbcapture.engine.SqlLogWindow", source(
+         "package com.custom.dbcapture.engine;",
+         "public class SqlLogWindow {",
+         "  private boolean open;",
+         "  public void open() { open = true; com.custom.dbcapture.CaptureLifecycleTest.opens++; }",
+         "  public void close() { open = false; com.custom.dbcapture.CaptureLifecycleTest.closes++; }",
+         "  public boolean isOpen() { return open; }",
+         "}"));
+      stubs.put("wt.util.WTProperties", source(
+         "package wt.util;",
+         "public class WTProperties extends java.util.Properties {",
+         "  public static WTProperties getLocalProperties() throws java.io.IOException {",
+         "    if (com.custom.dbcapture.CaptureLifecycleTest.correlationReadFailure) throw new java.io.IOException(\"synthetic settings read failure\");",
+         "    WTProperties properties = new WTProperties();",
+         "    properties.putAll(com.custom.dbcapture.CaptureLifecycleTest.correlationSettings);",
+         "    return properties;",
+         "  }",
+         "}"));
+      stubs.put("wt.session.SessionHelper", source(
+         "package wt.session;",
+         "public class SessionHelper { public static SessionManager manager; }"));
       List<JavaFileObject> sources = new ArrayList<>();
       stubs.forEach((name, content) -> sources.add(new SimpleJavaFileObject(
             URI.create("string:///" + name.replace('.', '/') + ".java"), JavaFileObject.Kind.SOURCE) {
@@ -317,7 +311,7 @@ public final class CaptureLifecycleTest {
       StringWriter messages = new StringWriter();
       try (var files = compiler.getStandardFileManager(null, null, null)) {
          boolean compiled = compiler.getTask(messages, files, null,
-               List.of("--release", "17", "-proc:none", "-encoding", "UTF-8",
+               List.of("--release", "11", "-proc:none", "-encoding", "UTF-8",
                      "-classpath", System.getProperty("java.class.path"), "-d", mocks.toString()),
                null, sources).call();
          if (!compiled) throw new AssertionError(messages.toString());
@@ -326,7 +320,7 @@ public final class CaptureLifecycleTest {
       return new URLClassLoader(new URL[] {mocks.toUri().toURL(), sourceClasses}, CaptureLifecycleTest.class.getClassLoader()) {
          @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
             synchronized (getClassLoadingLock(name)) {
-               if (name.equals("com.ptc.dbcapture.StandardDbCaptureService")
+               if (name.equals("com.custom.dbcapture.StandardDbCaptureService")
                      || stubs.containsKey(name)) {
                   Class<?> loaded = findLoadedClass(name);
                   if (loaded == null) loaded = findClass(name);
@@ -339,31 +333,42 @@ public final class CaptureLifecycleTest {
       };
    }
 
+   private static String source(String... lines) {
+      return String.join("\n", lines) + "\n";
+   }
+
    private static final class Jdbc {
       private int catalogReads;
       private long scn = 100;
 
       private Connection connection() {
-         return proxy(Connection.class, (p, method, args) -> switch (method.getName()) {
-            case "createStatement" -> statement(null);
-            case "prepareStatement" -> statement((String) args[0]);
-            default -> throw new AssertionError("Connection ownership/transaction calls are forbidden: " + method.getName());
+         return proxy(Connection.class, (p, method, args) -> {
+            switch (method.getName()) {
+               case "createStatement": return statement(null);
+               case "prepareStatement": return statement((String) args[0]);
+               default: throw new AssertionError("Connection ownership/transaction calls are forbidden: " + method.getName());
+            }
          });
       }
 
       private Statement statement(String sql) {
-         java.lang.reflect.InvocationHandler handler = (p, method, args) -> switch (method.getName()) {
-            case "setQueryTimeout", "setFetchSize", "setString", "setTimestamp", "close" -> null;
-            case "execute" -> {
-               String command = (String) args[0];
-               if (!command.equals("LOCK TABLE DBCAPTURESESSION IN EXCLUSIVE MODE NOWAIT")
-                     && !command.equals("BEGIN DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO; END;")) {
-                  throw new AssertionError("Unexpected simulated command: " + command);
-               }
-               yield false;
+         java.lang.reflect.InvocationHandler handler = (p, method, args) -> {
+            switch (method.getName()) {
+               case "setQueryTimeout":
+               case "setFetchSize":
+               case "setString":
+               case "setTimestamp":
+               case "close": return null;
+               case "execute":
+                  String command = (String) args[0];
+                  if (!command.equals("LOCK TABLE DBCAPTURESESSION IN EXCLUSIVE MODE NOWAIT")
+                        && !command.equals("BEGIN DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO; END;")) {
+                     throw new AssertionError("Unexpected simulated command: " + command);
+                  }
+                  return false;
+               case "executeQuery": return query(sql == null ? (String) args[0] : sql);
+               default: throw new AssertionError("Unexpected JDBC operation: " + method.getName());
             }
-            case "executeQuery" -> query(sql == null ? (String) args[0] : sql);
-            default -> throw new AssertionError("Unexpected JDBC operation: " + method.getName());
          };
          return sql == null ? proxy(Statement.class, handler) : proxy(PreparedStatement.class, handler);
       }
@@ -384,13 +389,15 @@ public final class CaptureLifecycleTest {
 
    private static ResultSet rows(Object[][] values) {
       int[] index = {-1};
-      return proxy(ResultSet.class, (p, method, args) -> switch (method.getName()) {
-         case "next" -> ++index[0] < values.length;
-         case "close" -> null;
-         case "getLong" -> ((Number) values[index[0]][(int) args[0] - 1]).longValue();
-         case "getInt" -> ((Number) values[index[0]][(int) args[0] - 1]).intValue();
-         case "getString" -> values[index[0]][(int) args[0] - 1].toString();
-         default -> throw new AssertionError("Unexpected fixture result operation: " + method.getName());
+      return proxy(ResultSet.class, (p, method, args) -> {
+         switch (method.getName()) {
+            case "next": return ++index[0] < values.length;
+            case "close": return null;
+            case "getLong": return ((Number) values[index[0]][(int) args[0] - 1]).longValue();
+            case "getInt": return ((Number) values[index[0]][(int) args[0] - 1]).intValue();
+            case "getString": return values[index[0]][(int) args[0] - 1].toString();
+            default: throw new AssertionError("Unexpected fixture result operation: " + method.getName());
+         }
       });
    }
 

@@ -12,8 +12,9 @@ table names or treat one captured SQL statement as a supported programming inter
 **Development and test environments only. Do not install or run DB Ninja in
 production.** All recipes below require an authorized test context; sanitize
 any copied business data and shared evidence.
-The first binary is restricted to the qualified Linux x64/Oracle 19c baseline
-in [COMPATIBILITY.md](COMPATIBILITY.md); Windows is unsupported as shipped.
+The first binary is restricted to the qualified Windows x64/Oracle 19c baseline
+in [COMPATIBILITY.md](COMPATIBILITY.md); other filesystems and CPS levels require
+separate qualification.
 Complete the release and target-acceptance gates in
 [INSTALL.md](INSTALL.md) before using a new source/binary candidate. Prior icon
 deployment does not establish that the new collector fixes are deployed.

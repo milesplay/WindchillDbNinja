@@ -10,8 +10,9 @@ import {readSchemaPackage} from './schema-package.mjs';
 
 const documents = ['README.md', 'INSTALL.md', 'HANDOFF.md', 'AGENTS.md',
   'COMPATIBILITY.md', 'CUSTOMIZATION.md', 'OPERATIONS.md', 'PUBLICATION.md',
-  'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md'];
-const optionalDocuments = ['THIRD-PARTY-NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md'];
+  'LOCAL-INSTALL.md', 'USE-CASES.md', 'CHANGELOG.md', 'DATABASE-SETUP.md',
+  'WINDOWS-PORTING.md'];
+const optionalDocuments = ['THIRD-PARTY-NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md', 'WINDOWS-MANUAL-INSTALL.md'];
 const rootFiles = new Set(['.gitignore', '.gitattributes', 'package.json', 'LICENSE', ...documents]);
 const publicDirectories = ['customization/DbCapture', 'customization/configurations', 'deployment', 'tools', 'sql'];
 const excludedRoots = new Set(['backups', 'build', '.git']);
@@ -159,7 +160,12 @@ function main() {
       if (blob.error) throw new Error(`Cannot read staged content for ${relative}: ${blob.error.message}`);
       if (blob.status !== 0) throw new Error(`Cannot read staged content: ${relative}`);
       validateContent(relative, blob.stdout, true);
-      if (!blob.stdout.equals(fs.readFileSync(publicationPath(relative)))) {
+      const working = fs.readFileSync(publicationPath(relative));
+      const workingHash = spawnSync('git', ['-C', bundle, 'hash-object', '--path', relative, '--stdin'], {
+        input: working,
+      });
+      if (workingHash.error || workingHash.status !== 0
+          || workingHash.stdout.toString('utf8').trim() !== objectId) {
         throw new Error(`Git index differs from the reviewed working tree: ${relative}; review and stage the intended content.`);
       }
     }
