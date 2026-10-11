@@ -125,7 +125,7 @@ test('schema and release handoff exposes the missing DDL without implying automa
   assert.match(schema, /not evidence that this exact combined script was executed/);
   assert.match(schema, /Do not execute the eight input files separately/);
   assert.match(prose('README.md'), /sql\/oracle\/create-db-ninja\.sql/);
-  assert.match(prose('README.md'), /releases\/tag\/v0\.1\.1/);
+  assert.match(prose('README.md'), /releases\/tag\/v0\.1\.2/);
   assert.match(prose('PUBLICATION.md'), /GitHub Packages is intentionally not required/);
   assert.match(prose('PUBLICATION.md'), /git archive/);
   assert.match(prose('PUBLICATION.md'), /SHA256SUMS/);

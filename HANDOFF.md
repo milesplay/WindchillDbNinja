@@ -96,7 +96,8 @@ The combined SQL guards reserved table/index/constraint names and explicit
 tablespaces before the first CREATE; it is neither an upgrade nor a reset.
 The publication gate rejects missing schema resources and any reviewed file
 omitted from the actual Git index. Package and prebuilt manifest versions must
-agree. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.1 packaging-only patch.
+agree. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.1 packaging-only patch and the 0.1.2
+first-capture prerequisite warnings.
 
 ### Current-source prebuilt assembly
 

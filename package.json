@@ -1,6 +1,6 @@
 {
   "name": "windchill-db-ninja",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Oracle diagnostics customization for non-production Windchill on qualified Linux targets",
   "license": "MIT",

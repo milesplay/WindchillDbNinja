@@ -21,8 +21,8 @@ JavaScript bundles, database dumps or private case records are included.
 
 ## Download and schema
 
-The **0.1.1 Linux development/test preview** provides a complete source/install
-ZIP and SHA256SUMS on the [release page](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.1).
+The **0.1.2 Linux development/test preview** provides a complete source/install
+ZIP and SHA256SUMS on the [release page](https://github.com/milesplay/WindchillDbNinja/releases/tag/v0.1.2).
 Verify the ZIP checksum, extract it to a private directory outside the web root,
 and follow [INSTALL.md](INSTALL.md). A clone of the same tag contains the same
 tracked files; no Maven/npm/container package is needed.

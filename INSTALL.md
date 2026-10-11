@@ -48,12 +48,12 @@ approved administrators.
 Clone the [repository](https://github.com/milesplay/WindchillDbNinja) and select
 the reviewed tag, or download the full source/install ZIP and SHA256SUMS from
 [Releases](https://github.com/milesplay/WindchillDbNinja/releases).
-For the 0.1.1 preview, keep the two assets in the same private directory:
+For the 0.1.2 preview, keep the two assets in the same private directory:
 
 ```text
 sha256sum -c SHA256SUMS
-unzip WindchillDbNinja-0.1.1-linux-x64.zip
-cd WindchillDbNinja-0.1.1
+unzip WindchillDbNinja-0.1.2-linux-x64.zip
+cd WindchillDbNinja-0.1.2
 node tools/schema-package.mjs verify
 ```
 
@@ -293,7 +293,7 @@ them only if an approved rollback requires them.
 ## 5. Fresh installation only: initialize the schema
 
 Skip this section for a packaging migration or an existing populated installation.
-The 0.1.1 package contains the missing CREATE scripts; see
+The 0.1.1 and later packages contain the missing CREATE scripts; see
 [the schema inventory and safeguards](sql/oracle/README.md).
 
 With the validated target-build or matching prebuilt JAR/ClassInfo placed and
