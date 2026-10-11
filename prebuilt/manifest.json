@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "package": "windchill-db-ninja",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "distribution": {
     "runtimeUnchangedFrom": "0.1.0",
-    "note": "Packaging-only patch adding qualified Oracle DDL, release checks and documentation. Runtime JAR, ClassInfo, generated-model baseline and the original build timestamp are unchanged."
+    "note": "Tooling/documentation patch adding first-capture prerequisite warnings (ANALYZE ANY, top-level Log4j filters) and the agent stop-on-WARN rule. Runtime JAR, ClassInfo, generated-model baseline and the original build timestamp are unchanged from 0.1.0."
   },
   "target": {
     "os": "linux",
