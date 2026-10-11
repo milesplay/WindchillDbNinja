@@ -162,6 +162,13 @@ Review site exclusions separately when large tables must be excluded.
 - Missing bind values and historical evidence are not reconstructed or invented.
 - Framework-hidden frames remain in the full recorded stack; truncation and caps
   are explicit. Global logger levels, appenders and profiler adapter maps are not replaced.
+- SQL evidence requires that the MethodServer Log4j configuration has no
+  top-level (global) filter. If one exists, for example a `filter.<name>`
+  MarkerFilter in `codebase/WEB-INF/log4jMethodServer.properties`, SQL evidence
+  is reported UNAVAILABLE and the configuration is left unchanged. `preflight`
+  warns about such entries. Removing or commenting one out is a site decision:
+  review its purpose with its owner, back up the file, restart the MethodServer
+  and keep the backup for rollback. A later CPS or patch may restore the filter.
 - CLOB/NCLOB comparison uses a bounded prefix (currently 1,000 characters and an
   omission marker); binary values are represented by length. Same-representation
   content changes can be missed. This is not full LOB auditing.

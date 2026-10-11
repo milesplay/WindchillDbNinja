@@ -10,6 +10,10 @@ SELECT SYS_CONTEXT('USERENV','SESSION_USER') AS session_user,
 SELECT privilege FROM session_privs
  WHERE privilege IN ('CREATE TABLE', 'ANALYZE ANY', 'FLASHBACK ANY TABLE', 'UNLIMITED TABLESPACE')
  ORDER BY privilege;
+SELECT CASE WHEN COUNT(*) = 0
+            THEN 'WARN: ANALYZE ANY absent; every capture will warn ORA-20000 and examine every table'
+            ELSE 'PASS: ANALYZE ANY present' END AS analyze_any_check
+  FROM session_privs WHERE privilege = 'ANALYZE ANY';
 SELECT default_tablespace FROM user_users;
 SELECT tablespace_name, bytes, max_bytes FROM user_ts_quotas ORDER BY tablespace_name;
 SELECT tablespace_name, status, contents FROM user_tablespaces

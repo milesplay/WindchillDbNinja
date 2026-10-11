@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Document that a missing ANALYZE ANY grant causes an `ORA-20000` warning and a
+  full-table examination on every capture, and how to verify the grant.
+- `sql/oracle-check.sql` reports `WARN` when ANALYZE ANY is absent from
+  SESSION_PRIVS.
+- `preflight` warns when log4jMethodServer.properties defines a top-level Log4j
+  filter, which makes SQL evidence UNAVAILABLE; documented in OPERATIONS.md.
+
 ## 0.1.1 - Oracle schema and distribution patch
 
 Linux x64 development/test preview, not a production release.

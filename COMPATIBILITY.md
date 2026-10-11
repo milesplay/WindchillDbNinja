@@ -104,7 +104,7 @@ snapshot product or a way to avoid Oracle Flashback privileges and undo.
 | FLASHBACK: Flashback Version Query | For objects not owned by the schema, Oracle documents `FLASHBACK` plus `READ` or `SELECT` on the relevant objects; owned-object access and any existing grants must be verified. Do not automatically grant `FLASHBACK ANY TABLE`. |
 | SNAPSHOT: two `SELECT ... AS OF SCN` reads | The same Flashback Query object access and usable undo are required at both endpoints. Ordinary current-row SELECT access alone does not qualify historical reads. |
 | SCN acquisition | Ability to execute `SYS.DBMS_FLASHBACK.GET_SYSTEM_CHANGE_NUMBER`; review `EXECUTE` on `SYS.DBMS_FLASHBACK`. |
-| Monitoring flush | The implemented `DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO` call requires `ANALYZE ANY` according to the Oracle 19c security model. Per-table Flashback grants do not replace that requirement. Obtain separate DBA approval; the installer must not grant it. |
+| Monitoring flush | The implemented `DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO` call requires `ANALYZE ANY` according to the Oracle 19c security model. Per-table Flashback grants do not replace that requirement. Without it, every capture records an `ORA-20000` warning and examines every included table at stop. Obtain separate DBA approval; the installer must not grant it. |
 | Monitoring and diagnostics | Read `USER_TAB_MODIFICATIONS` and the approved `V_$DATABASE`, `V_$PARAMETER`, `V_$UNDOSTAT` views used by qualification/diagnostics. A grant in the CDB root does not prove access in the application's PDB. |
 | DB Ninja persistence | Reviewed creation of four module tables/indexes on first install, and the normal schema rights to maintain/lock those module records. No SYSDBA runtime login. |
 

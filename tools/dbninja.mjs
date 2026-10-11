@@ -163,6 +163,17 @@ function preflight(env) {
   if (current['com.ptc.dbcapture.correlateLogs'] === 'true') {
     throw new Error('Legacy SQL correlation is enabled. Review and disable it explicitly before adopting this package.');
   }
+  const log4j = confined(env.home, 'codebase/WEB-INF/log4jMethodServer.properties');
+  if (fs.existsSync(log4j)) {
+    const globalFilters = [...new Set(fs.readFileSync(log4j, 'utf8').split(/\r?\n/).map(line => {
+      const named = line.match(/^\s*filter\.([^.=:\s]+)\./);
+      return named ? named[1] : (/^\s*filters\s*[=:]/.test(line) ? 'filters' : null);
+    }).filter(Boolean))];
+    if (globalFilters.length) {
+      console.log(`WARN: log4jMethodServer.properties defines top-level Log4j filter(s): ${globalFilters.join(', ')}. `
+        + 'SQL evidence will be UNAVAILABLE; see OPERATIONS.md (Evidence and representation limits).');
+    }
+  }
   console.log('PASS: filesystem/toolchain checks. This does NOT verify Oracle privileges, undo, schema, Windows runtime or a maintenance window.');
   console.log('Oracle-only: perform the database checks in COMPATIBILITY.md before building/activating.');
   return current;
