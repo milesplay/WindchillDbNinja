@@ -27,6 +27,14 @@ approval or maintenance authorization. Given access to an authorized target:
    an authorized grantor connection only if specifically permitted; otherwise
    hand it to the DBA. Reconnect as Windchill to verify both historical-query
    paths and the separately approved monitoring flush.
+   Treat every `WARN` from `preflight` or [oracle-check.sql](sql/oracle-check.sql)
+   as a stop: report it and obtain the owner's explicit decision before
+   continuing. A missing `ANALYZE ANY` makes every capture report ORA-20000
+   and examine every table at stop; a top-level Log4j filter in
+   `log4jMethodServer.properties` makes SQL evidence UNAVAILABLE. See
+   [DATABASE-SETUP.md](DATABASE-SETUP.md) and [OPERATIONS.md](OPERATIONS.md).
+   After the first authorized capture, confirm that neither warning appears
+   before reporting success. Never silence, skip or reclassify a warning.
    Keep credentials in the site's existing credential mechanism.
    Do not send licensed vendor source, private configuration, logs, SQL evidence
    or credentials to third-party services.

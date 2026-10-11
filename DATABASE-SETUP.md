@@ -106,6 +106,15 @@ it. If ANALYZE ANY is declined, obtain a separately reviewed qualification of
 the explicit full-scan fallback and its workload impact rather than claiming
 the normal monitoring-flush path is qualified.
 
+If ANALYZE ANY is not granted before the first capture, every capture records an
+`ORA-20000` (insufficient privileges) warning from the monitoring flush and
+examines every included table at stop. Treat the grant as an explicit
+pre-install decision. After a grant, verify it from a new Windchill schema-owner
+session with `SELECT privilege FROM session_privs WHERE privilege = 'ANALYZE ANY';`
+([oracle-check.sql](sql/oracle-check.sql) reports `WARN` when it is absent).
+On a multitenant database, make and verify the grant in the application PDB; a
+grant in the CDB root does not apply there. A non-CDB needs no container switch.
+
 GRANT and quota DDL commit implicitly. Use a fresh administrative session
 without pending business work. Never record credentials or actual schema
 identifiers in the repository, release notes, public issues or screenshots.
